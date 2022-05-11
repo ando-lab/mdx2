@@ -19,8 +19,8 @@ def parse_arguments():
     )
 
     # Required arguments
-    parser.add_argument("expt", help=".expt file containing scan metadata (e.g. from dials.refine)")
-    parser.add_argument("--outfile", default="geometry.nxs", help="name of the output nexus file")
+    parser.add_argument("expt", help="experiments file, such as from dials.refine")
+    parser.add_argument("--outfile", default="geometry.nxs", help="name of the output NeXus file")
 
     return parser
 
