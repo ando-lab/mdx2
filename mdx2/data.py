@@ -73,6 +73,7 @@ class ImageSet:
             if chunks is not None and chunks[0] > self.shape[0]:
                 chunks = (self.shape[0],chunks[1],chunks[2])
             images.compression = compression
+            images.compression_opts = 1 # use light compression by default (faster)
             images.shuffle = shuffle
             images.chunks = chunks
 

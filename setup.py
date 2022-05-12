@@ -35,7 +35,8 @@ setup(
         'console_scripts': [
             'mdx2.hello=mdx2.command_line.hello:run',
             'mdx2.import_images=mdx2.command_line.import_images:run',
-            'mdx2.import_crystal=mdx2.command_line.import_geometry:run',
+            'mdx2.import_crystal=mdx2.command_line.import_crystal:run',
+            'mdx2.import_corrections=mdx2.command_line.import_corrections:run',
             ],
     },
     include_package_data=True,
