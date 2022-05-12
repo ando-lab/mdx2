@@ -1,5 +1,5 @@
 """
-Import miller index map using the dxtbx machinery
+Find pixels with counts above a threshold
 """
 
 import argparse
@@ -17,9 +17,9 @@ def parse_arguments():
     )
 
     # Required arguments
-    parser.add_argument("expt", help="experiments file, such as from dials.refine")
-    parser.add_argument("--outfile", default="miller_index.nxs", help="name of the output NeXus file")
-    parser.add_argument("--sampling", nargs=3, metavar='N', type=int, default=[1,10,10], help="inverval between samples in degrees or pixels (phi, iy, ix)")
+    parser.add_argument("imgs", help="NeXus file containing the image stack")
+    parser.add_argument("--outfile", default="peaks.nxs", help="name of the output NeXus file")
+    parser.add_argument("--threshold", type=int, default=None], help="count > threshold are recorded as peaks")
 
     return parser
 
@@ -28,13 +28,13 @@ def run(args=None):
     parser = parse_arguments()
     args = parser.parse_args(args)
 
-    print(f"importing geometry from {args.expt}")
+    print(f"looping through image data in {args.imgs}")
     elist = ExperimentList.from_file(args.expt)
     expt = elist[0]
 
     index = MillerIndex.from_dxtbx_experiment(expt,sampling=tuple(args.sampling))
 
-    print(f"saving corrections to {args.outfile}")
+    print(f"saving peak table to {args.outfile}")
     nxs = index.to_nexus()
     nxs.save(args.outfile)
 

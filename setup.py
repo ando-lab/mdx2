@@ -37,6 +37,7 @@ setup(
             'mdx2.import_images=mdx2.command_line.import_images:run',
             'mdx2.import_crystal=mdx2.command_line.import_crystal:run',
             'mdx2.import_corrections=mdx2.command_line.import_corrections:run',
+            'mdx2.import_miller_index=mdx2.command_line.import_miller_index:run',
             ],
     },
     include_package_data=True,
