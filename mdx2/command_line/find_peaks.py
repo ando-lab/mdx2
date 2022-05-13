@@ -5,9 +5,9 @@ Find pixels with counts above a threshold
 import argparse
 
 import numpy as np
-from dxtbx.model.experiment_list import ExperimentList
+from nexusformat.nexus import nxload
 
-from mdx2.geometry import MillerIndex
+from mdx2.data import Peaks
 
 def parse_arguments():
     """Parse commandline arguments"""
@@ -19,7 +19,7 @@ def parse_arguments():
     # Required arguments
     parser.add_argument("imgs", help="NeXus file containing the image stack")
     parser.add_argument("--outfile", default="peaks.nxs", help="name of the output NeXus file")
-    parser.add_argument("--threshold", type=int, default=None], help="count > threshold are recorded as peaks")
+    parser.add_argument("--threshold", required=True, type=int, help="counts greater than threshold are recorded as peaks")
 
     return parser
 
@@ -29,13 +29,14 @@ def run(args=None):
     args = parser.parse_args(args)
 
     print(f"looping through image data in {args.imgs}")
-    elist = ExperimentList.from_file(args.expt)
-    expt = elist[0]
-
-    index = MillerIndex.from_dxtbx_experiment(expt,sampling=tuple(args.sampling))
+    nxs = nxload(args.imgs)
+    peaks = Peaks.from_image_counts_above_threshold(
+        nxs.entry.data,
+        threshold=args.threshold,
+        )
 
     print(f"saving peak table to {args.outfile}")
-    nxs = index.to_nexus()
+    nxs = peaks.to_nexus()
     nxs.save(args.outfile)
 
     print("done!")

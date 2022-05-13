@@ -1,6 +1,65 @@
 import numpy as np
 
 from nexusformat.nexus import NXsample, NXcollection, NXdata, NXfield, NXentry
+from scipy.interpolate import RegularGridInterpolator
+from scipy.ndimage import map_coordinates
+
+def fit_quadform_to_points(x,y,z,sigma_cutoff=3):
+    G3,is_outlier = Gaussian3.fit_to_points(x,y,z,sigma_cutoff=sigma_cutoff)
+    return G3.r0, G3.sigma, is_outlier
+
+#def fit_quadform_to_points(x,y,z,sigma_cutoff=3):
+    # """fit quadratic form to a set of points with one step of outlier rejection"""
+    # r = np.stack((x,y,z)).T
+    # r0 = np.mean(r,axis=0)
+    # u,s,vh = np.linalg.svd(r-r0,full_matrices=False)
+    # is_outlier = np.any(np.abs(u*np.sqrt(u.shape[0])) > sigma_cutoff,axis=1)
+    # # remove outlier points and fit again
+    # r = r[~is_outlier,:];
+    # r0 = np.mean(r,axis=0)
+    # u,s,vh = np.linalg.svd(r-r0,full_matrices=False)
+    # v = vh.T
+    # sigma = v @ np.diag(s/np.sqrt(u.shape[0]))
+    # return r0, sigma, is_outlier
+#
+# def eval_quadform_at_points(r0,sigma,x,y,z):
+#     r = np.stack((x,y,z))
+#     d = np.linalg.inv(sigma) @ (r - r0[:,np.newaxis])
+#     return np.sum(d*d,axis=0)
+
+class Gaussian3:
+    """Handy functions for 3d Gaussians"""
+
+    def __init__(self,r0,sigma):
+        self.r0 = r0
+        self.sigma = sigma
+
+    @staticmethod
+    def fit_to_points(x,y,z,sigma_cutoff=None):
+        """fit quadratic form to a set of points"""
+        r = np.stack((x,y,z)).T
+        r0 = np.mean(r,axis=0)
+        u,s,vh = np.linalg.svd(r-r0,full_matrices=False)
+        v = vh.T
+        sigma = v @ np.diag(s/np.sqrt(u.shape[0]))
+
+        G3 = Gaussian3(r0,sigma)
+
+        if sigma_cutoff is not None:
+            d2 = G3.quadform_at_points(x,y,z)
+            is_outlier = d2 > sigma_cutoff**2
+            x = x[~is_outlier]
+            y = y[~is_outlier]
+            z = z[~is_outlier]
+            return Gaussian3.fit_to_points(x,y,z,sigma_cutoff=None), is_outlier
+        else:
+            return G3
+
+    def quadform_at_points(self,x,y,z):
+        r = np.stack((x,y,z))
+        d = np.linalg.inv(self.sigma) @ (r - self.r0[:,np.newaxis])
+        return np.sum(d*d,axis=0)
+
 
 class MillerIndex:
     """array of Miller indices"""
@@ -8,6 +67,33 @@ class MillerIndex:
 
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
+
+    def interpolate(self,phi,iy,ix,order=1):
+        # faster version of scipy.interpolate.interpn using map_coordinates
+        phi_index = np.interp(phi,self.phi,np.arange(self.phi.size))
+        ix_index = np.interp(ix,self.ix,np.arange(self.ix.size))
+        iy_index = np.interp(iy,self.iy,np.arange(self.iy.size))
+        coordinates = np.stack((phi_index,iy_index,ix_index))
+        h = map_coordinates(self.h,coordinates,order=order)
+        k = map_coordinates(self.k,coordinates,order=order)
+        l = map_coordinates(self.l,coordinates,order=order)
+        return h,k,l
+
+#    @property
+#    def interpolator(self):
+#        axes = (self.phi,self.iy,self.ix)
+#        hinterp = RegularGridInterpolator(axes,self.h)
+#        kinterp = RegularGridInterpolator(axes,self.k)
+#        linterp = RegularGridInterpolator(axes,self.l)
+#        return lambda phi,iy,ix: (hinterp((phi,iy,ix)),kinterp((phi,iy,ix)),linterp((phi,iy,ix)))
+
+#    def interpolate(self,phi,iy,ix):
+#        axes = (self.phi,self.iy,self.ix)
+#        points = (phi,iy,ix)
+#        h = interpn(axes,self.h,points)
+#        k = interpn(axes,self.k,points)
+#        l = interpn(axes,self.l,points)
+#        return h, k, l
 
     @staticmethod
     def from_dxtbx_experiment(expt,sampling=(1,10,10)):
@@ -160,12 +246,12 @@ class MillerIndex:
     @staticmethod
     def from_nexus(entry):
         return MillerIndex(
-            ix=entry.h.ix,
-            iy=entry.h.iy,
-            phi=entry.h.phi,
-            h=entry.h.value,
-            k=entry.k.value,
-            l=entry.l.value,
+            ix=np.array(entry.h.ix),
+            iy=np.array(entry.h.iy),
+            phi=np.array(entry.h.phi),
+            h=np.array(entry.h.value),
+            k=np.array(entry.k.value),
+            l=np.array(entry.l.value),
         )
 
 

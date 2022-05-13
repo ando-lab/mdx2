@@ -1,7 +1,7 @@
 import numpy as np
 
 from dxtbx.model.experiment_list import ExperimentList
-from nexusformat.nexus import NXfield, NXdata
+from nexusformat.nexus import NXfield, NXdata, NXreflections
 
 def iter_chunks(chunks,shape):
     # for now, assume chunks and shape are length 3
@@ -21,30 +21,73 @@ class Peaks:
     def __init__(self, **kwargs):
         self.__dict__.update(kwargs)
 
+    def to_mask(self,imagedata):
+        phi_axis = np.array(imagedata.phi)
+        ix_axis = np.array(imagedata.ix)
+        iy_axis = np.array(imagedata.iy)
+        shape = imagedata.images.shape
+
+        # note... this only works if values are exactly equal. Otherwise they will be off by one. Beware!
+        ind0 = np.searchsorted(phi_axis,self.phi)
+        ind1 = np.searchsorted(iy_axis,self.iy)
+        ind2 = np.searchsorted(ix_axis,self.ix)
+
+        mask = np.zeros(shape,dtype='bool')
+        mask[ind0,ind1,ind2] = True
+        return mask
+
     @staticmethod
-    def find_peaks_in_nexus(imagedata,threshold=None,verbose=True):
+    def from_image_counts_above_threshold(imagedata,threshold=None,verbose=True):
         chunks = imagedata.images.chunks
         shape = imagedata.images.shape
         phi_axis = np.array(imagedata.phi)
         ix_axis = np.array(imagedata.ix)
         iy_axis = np.array(imagedata.iy)
-        pixels = [] # dump them into a list
+
+        pixels = [np.empty((0,3))] # dump them into a list
+
+        if verbose: print('looping over data chunks:')
 
         for ind,sl in enumerate(iter_chunks(chunks,shape)):
             imchunk = imagedata.images[sl]
             hotpixels = np.argwhere(imchunk > threshold)
             numhot = hotpixels.size
-            if numhot:
-                if verbose:
-                    print(f'found {numhot} pixels (chunk {ind})')
-                hotpixels[:,0] = phi_axis[sl[0]][hotpixels[:,0]]
-                hotpixels[:,1] = iy_axis[sl[1]][hotpixels[:,1]]
-                hotpixels[:,2] = ix_axis[sl[2]][hotpixels[:,2]]
-                pixels.append(hotpixels)
+            if not numhot: continue # skip ahead if none found
+            if verbose: print(f'  In data chunk {ind}, found {numhot} pixels')
+            p = np.empty_like(hotpixels,dtype=phi_axis.dtype)
+            p[:,0] = phi_axis[sl[0]][hotpixels[:,0]]
+            p[:,1] = iy_axis[sl[1]][hotpixels[:,1]]
+            p[:,2] = ix_axis[sl[2]][hotpixels[:,2]]
+            pixels.append(p)
 
-        pixels = np.vstack(pixels) # convert to numpy array
+        pixels = np.vstack(pixels) # convert list to numpy array
+
+        if verbose: print(f'In total, found {pixels.shape[0]} pixels above threshold')
 
         return Peaks(phi=pixels[:,0],iy=pixels[:,1],ix=pixels[:,2])
+
+    def to_nexus(self):
+        ix = NXfield(self.ix,name='ix')
+        iy = NXfield(self.iy,name='iy')
+        phi = NXfield(self.phi,name='phi',units='degree')
+
+        # empty counts for now
+        counts = NXfield(np.zeros_like(self.ix,dtype='bool'),name='counts')
+
+        return NXreflections(
+            name='peaks',
+            observed_phi=self.phi,
+            observed_px_x=self.ix,
+            observed_px_y=self.iy,
+            )
+
+    @staticmethod
+    def from_nexus(peaks):
+        return Peaks(
+            phi=np.array(peaks.observed_phi),
+            ix=np.array(peaks.observed_px_x),
+            iy=np.array(peaks.observed_px_y),
+        )
 
 
 class ImageSet:
