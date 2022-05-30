@@ -144,15 +144,15 @@ class HKLTable:
         if column_names is None:
             column_names = self._data_keys
 
-        print('finding unique indices')
+        #print('finding unique indices')
         (h,k,l), index_map, counts = self.unique()
 
         outcols = {}
         if count_name is not None:
-            print(f'storing bin counts in column: {count_name}')
+            #print(f'storing bin counts in column: {count_name}')
             outcols[count_name] = counts
         for key in column_names:
-            print(f'binning data column: {key}')
+            #print(f'binning data column: {key}')
             outcols[key] = np.bincount(index_map, weights=self.__dict__[key])
         return HKLTable(h,k,l,ndiv=self.ndiv,**outcols)
 
@@ -258,7 +258,7 @@ class ImageSeries:
             new_times = _bin_axis(self.exposure_times,bins[0],nbins[0])
             new_data = new_data/new_times[:,np.newaxis,np.newaxis]
 
-        return GridData((new_phi,new_iy,new_ix),new_data)
+        return GridData((new_phi,new_iy,new_ix),new_data,axes_names=['phi','iy','ix'])
 
 
     @property

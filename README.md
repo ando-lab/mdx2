@@ -1,4 +1,4 @@
-# *mdx2* - macromolecular diffuse scattering data reduction in python
+# *mdx2*: macromolecular diffuse scattering data reduction in python
 
 ## Manuscripts
 
