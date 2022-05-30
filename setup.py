@@ -17,19 +17,20 @@ with open('LICENSE') as f:
 setup(
     name='mdx2',
     version=__version__,
-    description='MDX2: total scattering for macromolecular crystallography',
+    description='mdx2: macromolecular diffuse scattering data reduction in python',
     long_description=readme,
     author='Steve P. Meisburger',
     author_email='spm82@cornell.edu',
     url='https://github.com/ando-lab/mdx2',
     license=license,
     packages=find_packages(exclude=('tests', 'docs')),
-    python_requires=">=3",
+    python_requires=">=3.9",
     install_requires=[
         "numpy",
+        "pandas",
         "scipy",
-        "dxtbx", # this does not work for some reason...
-        "nexusformat", # or nexpy ?
+        "dxtbx", # needs to be installed with conda
+        "nexusformat",
     ],
     entry_points={
         'console_scripts': [
