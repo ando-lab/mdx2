@@ -35,6 +35,12 @@ def run(args=None):
     args = parser.parse_args(args)
 
     T = loadobj(args.hkl,'hkl_table')
+
+    # hack to work with older versions
+    if '_ndiv' in T.__dict__:
+        T.ndiv = T._ndiv
+        del(T._ndiv)
+
     Corrections = loadobj(args.geom,'corrections')
     Crystal = loadobj(args.geom,'crystal')
     Symmetry = loadobj(args.geom,'symmetry')
@@ -82,7 +88,19 @@ def run(args=None):
     del(T.seconds)
     del(T.pixels)
 
-    # NOW, calculate
+    # save some disk space
+    T.h = T.h.astype(np.float32)
+    T.k = T.k.astype(np.float32)
+    T.l = T.l.astype(np.float32)
+    T.s = T.s.astype(np.float32)
+    T.intensity = T.intensity.astype(np.float32)
+    T.intensity_error = T.intensity_error.astype(np.float32)
+    T.ix = T.ix.astype(np.float32)
+    T.iy = T.iy.astype(np.float32)
+    T.phi = T.phi.astype(np.float32)
+    T.rs_volume = T.rs_volume.astype(np.float32)
+    T.n = T.n.astype(np.int32)
+    T.op = T.op.astype(np.int32)
 
     saveobj(T,args.outfile,name='hkl_table',append=False)
 

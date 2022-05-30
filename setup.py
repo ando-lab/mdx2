@@ -44,6 +44,7 @@ setup(
             'mdx2.correct=mdx2.command_line.correct:run',
             'mdx2.merge=mdx2.command_line.merge:run',
             'mdx2.map=mdx2.command_line.map:run',
+            'mdx2.scale=mdx2.command_line.scale:run',
             ],
     },
     include_package_data=True,

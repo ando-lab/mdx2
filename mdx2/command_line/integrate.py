@@ -65,7 +65,8 @@ def run(args=None):
             tab = ims.index(MI,mask=mask[sl].nxdata) # added nxdata to deal with NXfield wrapper
         else:
             tab = ims.index(MI)
-        tab_binned = tab.bin(ndiv=ndiv,count_name='pixels')
+        tab.ndiv = ndiv
+        tab_binned = tab.bin(count_name='pixels')
 
         print(f'  binned chunk {ind} from {len(tab)} to {len(tab_binned)} voxels')
         T.append(tab_binned)
@@ -91,7 +92,17 @@ def run(args=None):
     print(f"Saving table of integrated data to {args.outfile}")
 
     hkl_table = HKLTable.from_frame(df)
-    hkl_table._ndiv = ndiv # lost in conversion to/from dataframe
+    hkl_table.ndiv = ndiv # lost in conversion to/from dataframe
+
+    hkl_table.h = hkl_table.h.astype(np.float32)
+    hkl_table.k = hkl_table.k.astype(np.float32)
+    hkl_table.l = hkl_table.l.astype(np.float32)
+    hkl_table.phi = hkl_table.phi.astype(np.float32)
+    hkl_table.ix = hkl_table.ix.astype(np.float32)
+    hkl_table.iy = hkl_table.iy.astype(np.float32)
+    hkl_table.seconds = hkl_table.seconds.astype(np.float32)
+    hkl_table.counts = hkl_table.counts.astype(np.int32)
+    hkl_table.pixels = hkl_table.pixels.astype(np.int32)
 
     saveobj(hkl_table,args.outfile,name='hkl_table',append=False)
 

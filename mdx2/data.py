@@ -68,32 +68,27 @@ class Peaks:
 
 class HKLTable:
     """Container for data in a table with indices h,k,l"""
-    def __init__(self,h,k,l,_ndiv=None,**kwargs):
+    def __init__(self,h,k,l,ndiv=[1,1,1],**kwargs):
         self.h = h
         self.k = k
         self.l = l
-        self._ndiv = _ndiv
+        self.ndiv = ndiv
         self.__dict__.update(kwargs)
 
     @property
     def _data_keys(self):
-        return [key for key in self.__dict__ if key not in ['h','k','l','_ndiv']]
+        return [key for key in self.__dict__ if key not in ['h','k','l','ndiv']]
 
     def __len__(self):
         return len(self.h)
 
     def to_frame(self):
         """ convert to pandas dataframe """
-        cols = {k:self.__dict__[k] for k in self.__dict__ if k not in ['_ndiv']}
+        cols = {k:self.__dict__[k] for k in self.__dict__ if k not in ['ndiv']}
         return pd.DataFrame(cols)
 
     def to_asu(self,Symmetry):
-        if self._ndiv is None:
-            print('warning: hkl table appears to be unbinned. Miller indices will be rounded to nearest integer')
-            ndiv = [1,1,1]
-        else:
-            ndiv = self._ndiv
-
+        ndiv = self.ndiv
         H = np.round(self.h*ndiv[0]).astype(int)
         K = np.round(self.k*ndiv[1]).astype(int)
         L = np.round(self.l*ndiv[2]).astype(int)
@@ -108,32 +103,62 @@ class HKLTable:
 
         return newtable
 
+    @property
+    def H(self):
+        return np.round(self.h*self.ndiv[0]).astype(int)
 
-    def bin(self,ndiv=[1,1,1],column_names=None,count_name='count'):
+    @property
+    def K(self):
+        return np.round(self.k*self.ndiv[1]).astype(int)
+
+    @property
+    def L(self):
+        return np.round(self.l*self.ndiv[2]).astype(int)
+
+    def to_array_index(self,ori=None):
+        H, K, L = self.H, self.K, self.L
+        if ori is None:
+            O = (np.min(H),np.min(K),np.min(L))
+        else:
+            O = tuple(np.array(self.ndiv)*np.array(ori))
+        return (H - O[0],K - O[1],L - O[2]),O
+
+    def from_array_index(self,index,shape,O=[0,0,0]):
+        hklind = np.unravel_index(index,shape)
+        hkl = [(ind + o)/n for ind,o,n in zip(hklind,O,self.ndiv)]
+        return tuple(hkl)
+
+    def unique(self):
+        ind, O = self.to_array_index()
+        sz = [np.max(j)+1 for j in ind]
+        unique_index, index_map, counts = np.unique(
+            np.ravel_multi_index(ind,sz),
+            return_inverse=True,
+            return_counts=True,
+            )
+        hkl = self.from_array_index(unique_index,sz,O=O)
+        return hkl, index_map, counts
+
+    def bin(self,column_names=None,count_name='count'):
+
         if column_names is None:
             column_names = self._data_keys
-        H = np.round(self.h*ndiv[0]).astype(int)
-        K = np.round(self.k*ndiv[1]).astype(int)
-        L = np.round(self.l*ndiv[2]).astype(int)
-        Hmin, Hmax = np.min(H), np.max(H)
-        Kmin, Kmax = np.min(K), np.max(K)
-        Lmin, Lmax = np.min(L), np.max(L)
-        sz = [1 + Hmax - Hmin, 1 + Kmax - Kmin, 1 + Lmax - Lmin]
-        HKL = np.ravel_multi_index((H-Hmin,K-Kmin,L-Lmin),sz)
-        HKLu, HKLind, counts = np.unique(HKL,return_inverse=True,return_counts=True)
-        Hu,Ku,Lu = np.unravel_index(HKLu,sz)
-        Hu,Ku,Lu = Hu+Hmin,Ku+Kmin,Lu+Lmin
-        h,k,l = Hu/ndiv[0], Ku/ndiv[1], Lu/ndiv[2]
+
+        print('finding unique indices')
+        (h,k,l), index_map, counts = self.unique()
+
         outcols = {}
         if count_name is not None:
+            print(f'storing bin counts in column: {count_name}')
             outcols[count_name] = counts
         for key in column_names:
-            outcols[key] = np.bincount(HKLind, weights=self.__dict__[key])
-        return HKLTable(h,k,l,_ndiv=ndiv,**outcols)
+            print(f'binning data column: {key}')
+            outcols[key] = np.bincount(index_map, weights=self.__dict__[key])
+        return HKLTable(h,k,l,ndiv=self.ndiv,**outcols)
 
     @staticmethod
     def concatenate(tabs):
-        _ndiv = tabs[0]._ndiv # assume the first one is canonical
+        ndiv = tabs[0].ndiv # assume the first one is canonical
         data_keys = set(tabs[0]._data_keys)
         for j in range(1,len(tabs)):
             data_keys = data_keys.intersection(data_keys)
@@ -143,7 +168,7 @@ class HKLTable:
         k = concat('k')
         l = concat('l')
         cols = {key:concat(key) for key in data_keys}
-        return HKLTable(h,k,l,_ndiv=_ndiv,**cols)
+        return HKLTable(h,k,l,ndiv=ndiv,**cols)
 
     @staticmethod
     def from_frame(df):

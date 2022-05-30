@@ -39,7 +39,7 @@ def run(args=None):
     Symmetry = loadobj(args.geom,'symmetry') # used only if symmetry flag is set
     signal = args.signal
     hmin,hmax,kmin,kmax,lmin,lmax = args.limits
-    ndiv = T._ndiv
+    ndiv = T.ndiv
 
     Hmin = np.round(hmin*ndiv[0]).astype(int)
     Hmax = np.round(hmax*ndiv[0]).astype(int)
@@ -60,7 +60,7 @@ def run(args=None):
     print('generating Miller index array')
     h,k,l = np.meshgrid(h_axis,k_axis,l_axis,indexing='ij')
 
-    Tgrid = HKLTable(h.ravel(),k.ravel(),l.ravel(),_ndiv=ndiv)
+    Tgrid = HKLTable(h.ravel(),k.ravel(),l.ravel(),ndiv=ndiv)
 
     if args.symmetry:
         print('mapping Miller indices to asymmetric unit')

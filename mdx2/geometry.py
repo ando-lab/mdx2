@@ -107,7 +107,7 @@ class GridData:
 
     def to_nexus(self):
         axes = [NXfield(ax,name=n) for ax,n in zip(self.axes,self.axes_names)]
-        return NXdata(self.data,axes)
+        return NXdata(self.data,axes,name='grid_data')
 
     @staticmethod
     def from_nexus(nxdata):
