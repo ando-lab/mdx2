@@ -50,7 +50,7 @@ def run(args=None):
     # computing scattering vector magnitude
     print('calculating scattering vector magnitude (s)')
     s = UB @ np.stack((T.h,T.k,T.l))
-    T.s = np.sum(s*s,axis=0)
+    T.s = np.sqrt(np.sum(s*s,axis=0))
 
     # map h,k,l to asymmetric unit
     print('mapping Miller indices to the asymmetric unit')
