@@ -20,7 +20,7 @@ def loadobj(filename,objectname,verbose=True):
     if verbose: print(f'  importing as {cls} from {mod}')
     return Class.from_nexus(nxs)
 
-def saveobj(obj,filename,name = None,append=False,verbose=True):
+def saveobj(obj,filename,name=None,append=False,verbose=True,mode='w'):
     # simple wrapper to save mdx2 objects as nxs files
     #
     if verbose: print(f'Exporting {type(obj)} to nexus object')
@@ -34,7 +34,7 @@ def saveobj(obj,filename,name = None,append=False,verbose=True):
         root = nxload(filename,'r+')
         root['entry/' + nxsobj.nxname] = nxsobj
     else:
-        nxsobj.save(filename)
+        nxsobj.save(filename,mode=mode)
     return nxsobj
 
 # FUNCTIONS FOR EFFICIENT LINEAR INTERPOLATION
