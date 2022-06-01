@@ -14,8 +14,6 @@ For a detailed walkthrough check out the 2022 Erice workshop on data reduction: 
 
 ### Version 0.3.0
 
-*Currently testing for the 2022 Erice workshop on data reduction as version 0.3.0-alpha*
-
 Features:
 - pip-installable via setup.py
 - fully-featured command-line interface
