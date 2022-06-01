@@ -2,7 +2,7 @@
 
 ## Manuscripts
 
-*mdx2* is based on the MATLAB library *mdx-lib*. The methods are described in the following publication:
+*mdx2* is based on the MATLAB library [mdx-lib](https://github.com/ando-lab/mdx-lib). The methods are described in the following publication:
 
 > Meisburger, S.P., Case, D.A. & Ando, N. Diffuse X-ray scattering from correlated motions in a protein crystal. *Nature Communications* **11**, 1271 (2020). [doi:10.1038/s41467-020-14933-6](https://doi.org/10.1038/s41467-020-14933-6)
 
