@@ -120,6 +120,7 @@ class Experiment:
     def scan_axes(self):
         return self.calc_scan_axes()
 
+
     def calc_scan_axes(self,centered=True,samples=None,spacing=None):
         nx,ny = self.image_size
         nimgs = self.num_images
@@ -333,11 +334,16 @@ def phi_to_base_fraction_index(scan,phi_vals_deg):
     # the fractional part is between zero and one for phi angles within the
     # scan range. the integer part can range from 0,(n-1) where n is the
     # maximum array index
-    imin, imax = scan.get_array_range()
+
+    #imin, imax = scan.get_array_range()
+    imin = 0
+    imax = scan.get_num_images()
+    phi0, dphi = scan.get_oscillation()
     b = []
     f = []
     for ind, phi in enumerate(phi_vals_deg):
-        scan_index = scan.get_array_index_from_angle(phi)
+        #scan_index = scan.get_array_index_from_angle(phi)
+        scan_index = (phi - phi0)/dphi
         scan_index_base = int(scan_index)
         if scan_index_base >= imax:
             scan_index_base = imax - 1
