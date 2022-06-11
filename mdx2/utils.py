@@ -132,6 +132,46 @@ def _base_fraction(x,axis=None):
     fx = fx - bx
     return bx, fx
 
+def slice_sections(Ntotal,Nsections):
+    """Slices that divide an array of length Ntotal into Nsections. See np.split_array"""
+    Neach_section, extras = divmod(Ntotal, Nsections)
+    section_sizes = ([0] +
+                 extras * [Neach_section+1] +
+                 (Nsections-extras) * [Neach_section])
+    div_points = np.array(section_sizes, dtype=int).cumsum()
+    slices = []
+    for i in range(Nsections):
+        st = div_points[i]
+        end = div_points[i + 1]
+        slices.append(slice(st,end))
+    return tuple(slices)
+
+# def bin_2d(x0,y0,v0,Nx,Ny):
+#     x_slices = _slice_sections(x0.size,Nx)
+#     y_slices = _slice_sections(y0.size,Ny)
+#     x = np.array([x0[sl].mean() for sl in x_slices])
+#     y = np.array([y0[sl].mean() for sl in y_slices])
+#     v = np.empty_like(v0,shape=(y.size,x.size))
+#     for ix,slx in enumerate(x_slices):
+#         for iy,sly in enumerate(y_slices):
+#             v[iy,ix] = v0[sly,slx].mean()
+#     return x,y,v
+#
+# def bin_3d(x0,y0,z0,v0,Nx,Ny,Nz):
+#     x_slices = _slice_sections(x0.size,Nx)
+#     y_slices = _slice_sections(y0.size,Ny)
+#     z_slices = _slice_sections(z0.size,Nz)
+#     x = np.array([x0[sl].mean() for sl in x_slices])
+#     y = np.array([y0[sl].mean() for sl in y_slices])
+#     z = np.array([z0[sl].mean() for sl in z_slices])
+#     v = np.empty_like(v0,shape=(z.size,y.size,x.size))
+#     for ix,slx in enumerate(x_slices):
+#         for iy,sly in enumerate(y_slices):
+#             for iz,slz in enumerate(z_slices):
+#                 v[iz,iy,ix] = v0[sly,slx].mean()
+#     return x,y,z,v
+
+
 def interp_g2g_bilinear(x0,y0,v0,x,y):
     """bilinear interpolation from one grid to another"""
     bx,fx = _base_fraction(x,axis=x0)

@@ -117,26 +117,6 @@ class GridData:
         axes = [nxdata[name].nxvalue for name in axes_names]
         return GridData(axes,data,axes_names=axes_names)
 
-    def bin(self,new_axes):
-        pass
-        #edges = [np.concatenate([-np.inf],ax[1:]*0.5 + ax[:-1]*0.5,[np.inf]) for ax in new_axes]
-        #indices = [np.searchsorted(edge,axis) - 1 for zip(edges,self.axes)]
-
-        # meshgrid
-        # ravel_multi_index
-        # bincount (loop weights over K)
-        # reshape and return
-
-        # or...
-        # split along 0
-        # sum along 0 for each in split
-        # split along 1,
-        # sum along 1 for each in split
-        # ...
-
-        # <---- LEFT OFF HERE ---->
-
-
 
 class MillerIndex(GridData):
     """array of Miller indices"""

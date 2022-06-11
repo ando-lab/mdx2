@@ -7,6 +7,7 @@ from nexusformat.nexus import NXfield, NXdata, NXgroup, NXreflections
 
 from mdx2.dxtbx_machinery import Experiment
 from mdx2.geometry import GridData
+from mdx2.utils import slice_sections
 
 class Peaks:
     """search peaks in image stack"""
@@ -230,32 +231,29 @@ class ImageSeries:
     def bin_down(self,bins,valid_range=None,count_rate=True):
         bins = np.array(bins)
         nbins = np.ceil(self.shape/bins).astype(int)
-        nadd = nbins*bins - self.shape
+        sl_0 = slice_sections(self.shape[0],nbins[0])
+        sl_1 = slice_sections(self.shape[1],nbins[1])
+        sl_2 = slice_sections(self.shape[2],nbins[2])
 
-        def _bin_axis(ax,bin,nbin):
-            nadd = bin*nbin - ax.size
-            tmp = np.pad(ax.astype(float),((0,nadd)),'constant', constant_values=np.nan)
-            tmp = tmp.reshape((nbin,bin))
-            return np.nanmean(tmp,axis=1)
+        new_phi = np.array([self.phi[sl].mean() for sl in sl_0])
+        new_iy = np.array([self.iy[sl].mean() for sl in sl_1])
+        new_ix = np.array([self.ix[sl].mean() for sl in sl_2])
 
-        new_phi = _bin_axis(self.phi,bins[0],nbins[0])
-        new_ix = _bin_axis(self.ix,bins[2],nbins[2])
-        new_iy = _bin_axis(self.iy,bins[1],nbins[1])
+        nbins = [len(sl_0),len(sl_1),len(sl_2)]
 
         new_data = np.empty(nbins,dtype=float)
-        for index, start in enumerate(range(0,nbins[0]*bins[0],bins[0])):
-            stop = min(start + bins[0],self.shape[0])
-            print(f'binning frames {start} to {stop-1}')
-            tmp = self._as_np(self.data[start:stop,:,:])
-            pad_width = ((0,0),(0,nadd[1]),(0,nadd[2]))
-            tmp = np.pad(tmp.astype(float),pad_width,'constant', constant_values=np.nan)
+        for ind_phi,sl_phi in enumerate(sl_0):
+            print(f'binning frames {sl_phi.start} to {sl_phi.stop-1}')
+            tmp = self._as_np(self.data[sl_phi,:,:])
+            #print('binning')
+            tmp = np.ma.masked_equal(tmp,self._maskval,copy=False)
             if valid_range is not None:
                 tmp = np.ma.masked_outside(tmp,valid_range[0],valid_range[1],copy=False)
-            tmp = tmp.reshape((bins[0],nbins[1],bins[1],nbins[2],bins[2]))
-            new_data[index,:,:] = np.nanmean(tmp,axis=(0,2,4))
-
+            for ind_y,sl_y in enumerate(sl_1): # not vectorized - could be slow?
+                for ind_x,sl_x in enumerate(sl_2):
+                    new_data[ind_phi,ind_y,ind_x] = tmp[:,sl_y,sl_x].mean()
         if count_rate:
-            new_times = _bin_axis(self.exposure_times,bins[0],nbins[0])
+            new_times = np.array([self.exposure_times[sl].mean() for sl in sl_0])
             new_data = new_data/new_times[:,np.newaxis,np.newaxis]
 
         return GridData((new_phi,new_iy,new_ix),new_data,axes_names=['phi','iy','ix'])
