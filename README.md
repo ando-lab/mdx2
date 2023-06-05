@@ -2,13 +2,14 @@
 
 ## Manuscripts
 
-*mdx2* is based on the MATLAB library [mdx-lib](https://github.com/ando-lab/mdx-lib). The methods are described in the following publication:
+*Mdx2* is based on algorithms and general philosophy of the MATLAB library [mdx-lib](https://github.com/ando-lab/mdx-lib). The methods are described in the following publications:
 
 > Meisburger, S.P., Case, D.A. & Ando, N. Diffuse X-ray scattering from correlated motions in a protein crystal. *Nature Communications* **11**, 1271 (2020). [doi:10.1038/s41467-020-14933-6](https://doi.org/10.1038/s41467-020-14933-6)
+> Meisburger, S.P., and Ando, N. Processing macromolecular diffuse scattering data. *Methods in Enzymology* [submitted] (2023).
 
 ## Tutorial
 
-For a detailed walkthrough check out the 2022 Erice workshop on data reduction: https://github.com/ando-lab/erice-2022-data-reduction
+A detailed walkthrough is included. See ![tutorials/insulin/README.md](tutorials/insulin/README.md) for instructions.
 
 ## Versions
 
@@ -29,26 +30,11 @@ Limitations:
 - scaling model includes phi-dependent term only
 - file format details will likely change in future releases
 
-## Developer installation (conda)
-
-Create a fresh conda environment
-```
-conda create --name mdx2-dev python=3.9
-conda activate mdx2-dev
-```
-
-Install dependencies
+## Installation (conda)
 
 ```
-conda install dxtbx
-conda install pandas
-conda install -c conda-forge nexusformat
-```
-
-Install `mdx2`
-
-```
-git clone https://github.com/ando-Lab/mdx2
-cd mdx2
-pip install -e .
+conda create --name mdx2 python=3.10
+conda activate mdx2
+conda install -c conda-forge dxtbx nexusformat pandas numexpr
+pip install git+https://github.com/ando-lab/mdx2.git
 ```
