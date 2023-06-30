@@ -23,6 +23,7 @@ def parse_arguments():
     parser.add_argument("--count_threshold", metavar='THRESH', required=True, type=float, help="pixels with counts above threshold are flagged as peaks")
     parser.add_argument("--sigma_cutoff", metavar='SIGMA', default=3, type=float, help="\for outlier rejection in Gaussian peak fitting")
     parser.add_argument("--outfile", default="peaks.nxs", help="name of the output NeXus file")
+    parser.add_argument("--nproc", type=int, default=1, metavar='N', help="number of parallel processes")
 
     return parser
 
@@ -34,7 +35,7 @@ def run(args=None):
     IS = loadobj(args.data,'image_series')
 
     print(f'finding pixels with counts above threshold: {args.count_threshold}')
-    P = IS.find_peaks_above_threshold(args.count_threshold)
+    P = IS.find_peaks_above_threshold(args.count_threshold,nproc=args.nproc)
 
     print('indexing peaks')
     h,k,l = MI.interpolate(P.phi,P.iy,P.ix)
