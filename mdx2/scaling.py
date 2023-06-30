@@ -11,29 +11,6 @@ try:
 except ImportError:
     pass # fail silently... xarray features still in development
 
-#from numba import jit
-#
-#@jit(nopython=True)
-#def _map3_numba(x,y,z,wx,wy,wz):
-#    Nx, Ny, Nz = wx.size, wy.size, wz.size
-#    isinside = (x >= wx[0]) & (x <= wx[-1]) & \
-#               (y >= wy[0]) & (y <= wy[-1]) & \
-#               (z >= wz[0]) & (z <= wz[-1])
-#    ind = np.nonzero(isinside)[0]
-#    fx = np.interp(x[ind],wx,np.arange(Nx))
-#    fy = np.interp(y[ind],wy,np.arange(Ny))
-#    fz = np.interp(z[ind],wz,np.arange(Nz))
-#    xbin = fx.astype(np.int_)
-#    ybin = fy.astype(np.int_)
-#    zbin = fz.astype(np.int_)
-#    xbin[xbin==(Nx-1)] -= 1 # fix edge cases
-#    ybin[ybin==(Ny-1)] -= 1
-#    zbin[zbin==(Nz-1)] -= 1
-#    xfrac = fx - xbin
-#    yfrac = fy - ybin
-#    zfrac = fz - zbin
-#    return ind, xbin, ybin, zbin, xfrac, yfrac, zfrac
-
 class InterpLin3:
     def __init__(self,x,y,z,wx,wy,wz):
         self.x = x # points to interpolate at in the x direction
@@ -42,11 +19,11 @@ class InterpLin3:
         self.wx = wx # the control points in the x direction, increasing
         self.wy = wy # the control points in the y direction, increasing
         self.wz = wz # the control points in the z direction, increasing
-        
+
     @property
     def shape(self):
         return self.wx.size, self.wy.size, self.wz.size
-    
+
     def _map(self):
         Nx,Ny,Nz = self.shape
         isinside = (self.x >= self.wx[0]) & (self.x <= self.wx[-1]) & \
@@ -59,17 +36,7 @@ class InterpLin3:
         fx = np.interp(x,self.wx,np.arange(Nx))
         fy = np.interp(y,self.wy,np.arange(Ny))
         fz = np.interp(z,self.wz,np.arange(Nz))
-        
-        #fx = np.interp(self.x,self.wx,np.arange(Nx),left=np.nan,right=np.nan)
-        #fy = np.interp(self.y,self.wy,np.arange(Ny),left=np.nan,right=np.nan)
-        #fz = np.interp(self.z,self.wz,np.arange(Nz),left=np.nan,right=np.nan)
-        #ind = np.nonzero(~np.isnan(fx) & ~np.isnan(fy) & ~np.isnan(fz))[0].astype(int)
-        #fx = fx[ind]
-        #fy = fy[ind]
-        #fz = fz[ind]
-        #xbin = np.floor(fx).astype(int)
-        #ybin = np.floor(fy).astype(int)
-        #zbin = np.floor(fz).astype(int)
+
         xbin = fx.astype(int)
         ybin = fy.astype(int)
         zbin = fz.astype(int)
@@ -80,7 +47,7 @@ class InterpLin3:
         yfrac = fy - ybin
         zfrac = fz - zbin
         return ind, xbin, ybin, zbin, xfrac, yfrac, zfrac
-    
+
     def _sub2ind(self,ix,iy,iz,Nx=None,Ny=None,Nz=None):
         if Nx is None:
             Nx = self.wx.size
@@ -91,10 +58,10 @@ class InterpLin3:
         #ind = ix + Nx*(iy + Ny*iz)
         ind = np.ravel_multi_index((ix,iy,iz),(Nx,Ny,Nz),order='F')
         return ind
-    
+
     def interp(self,p):
         ind, xbin, ybin, zbin, xfrac, yfrac, zfrac = self._map()
-        #ind, xbin, ybin, zbin, xfrac, yfrac, zfrac = _map3_numba(self.x,self.y,self.z,self.wx,self.wy,self.wz)
+
         vals = np.zeros_like(self.x)
         p = p.flatten(order='F')
         vals[ind] = \
@@ -106,20 +73,9 @@ class InterpLin3:
             p[self._sub2ind(xbin+1,ybin,  zbin+1)]*zfrac*xfrac*(1-yfrac) + \
             p[self._sub2ind(xbin,  ybin+1,zbin+1)]*zfrac*(1-xfrac)*yfrac + \
             p[self._sub2ind(xbin+1,ybin+1,zbin+1)]*zfrac*xfrac*yfrac
-        
-        # try the same thing using fancy indexing. is it faster? (No, about the same)
-        #vals[ind] = \
-        #    p[xbin,  ybin,  zbin  ]*(1-zfrac)*(1-xfrac)*(1-yfrac) + \
-        #    p[xbin+1,ybin,  zbin  ]*(1-zfrac)*xfrac*(1-yfrac) + \
-        #    p[xbin,  ybin+1,zbin  ]*(1-zfrac)*(1-xfrac)*yfrac + \
-        #    p[xbin+1,ybin+1,zbin  ]*(1-zfrac)*xfrac*yfrac + \
-        #    p[xbin,  ybin,  zbin+1]*zfrac*(1-xfrac)*(1-yfrac) + \
-        #    p[xbin+1,ybin,  zbin+1]*zfrac*xfrac*(1-yfrac) + \
-        #    p[xbin,  ybin+1,zbin+1]*zfrac*(1-xfrac)*yfrac + \
-        #    p[xbin+1,ybin+1,zbin+1]*zfrac*xfrac*yfrac
-        
+
         return vals
-    
+
     @property
     def A(self):
         ind, xbin, ybin, zbin, xfrac, yfrac, zfrac = self._map()
@@ -140,15 +96,15 @@ class InterpLin3:
         col_index = self._sub2ind(x_index,y_index,z_index)
         shape = (self.x.size,self.wx.size*self.wy.size*self.wz.size)
         return sparse.coo_matrix((vals,(row_index,col_index)),shape=shape)
-    
+
     @property
     def Bx(self):
         raise NotImplementedError
-        
+
     @property
     def By(self):
         raise NotImplementedError
-        
+
     @property
     def Bz(self):
         Nx, Ny, Nz = self.shape
@@ -163,11 +119,11 @@ class InterpLin3:
         vals = np.concatenate((np.full(nrows,-0.5),np.full(nrows,1.0),np.full(nrows,-0.5)))
         shape = (nrows,Nx*Ny*Nz)
         return sparse.coo_matrix((vals,(row_index,col_index)),shape=shape)
-    
+
     @property
     def B(self):
         raise NotImplementedError
-        
+
     @property
     def Bxy(self):
         Nx, Ny, Nz = self.shape
@@ -184,7 +140,7 @@ class InterpLin3:
         # weight accordint to the number of neighbors
         nn = np.asarray(L.sum(axis=1)).flatten()
         return sparse.eye(shape[0]) - sparse.diags(1/nn)@L
-        
+
 
 class InterpLin2:
     def __init__(self,x,y,wx,wy):
@@ -192,11 +148,11 @@ class InterpLin2:
         self.y = y # points to interpolate at in the y direction
         self.wx = wx # the control points in the x direction, increasing
         self.wy = wy # the control points in the y direction, increasing
-        
+
     @property
     def shape(self):
         return self.wx.size, self.wy.size
-        
+
     def _map(self):
         Nx,Ny = self.shape
         fx = np.interp(self.x,self.wx,np.arange(Nx),left=np.nan,right=np.nan)
@@ -211,7 +167,7 @@ class InterpLin2:
         xfrac = fx - xbin
         yfrac = fy - ybin
         return ind, xbin, ybin, xfrac, yfrac
-        
+
     def _sub2ind(self,ix,iy,Nx=None,Ny=None):
         """convert 2D array index to linear index"""
         if Nx is None:
@@ -221,7 +177,7 @@ class InterpLin2:
         #ind = ix + Nx*iy;
         ind = np.ravel_multi_index((ix,iy),(Nx,Ny),order='F')
         return ind
-        
+
     def interp(self,p):
         ind, xbin, ybin, xfrac, yfrac = self._map()
         vals = np.zeros_like(self.x)
@@ -243,7 +199,7 @@ class InterpLin2:
         col_index = self._sub2ind(x_index,y_index)
         shape = (self.x.size,self.wx.size*self.wy.size)
         return sparse.coo_matrix((vals,(row_index,col_index)),shape=shape)
-    
+
     @property
     def Bx(self):
         Nx, Ny = self.shape
@@ -258,7 +214,7 @@ class InterpLin2:
         vals = np.concatenate((np.full(nrows,-0.5),np.full(nrows,1.0),np.full(nrows,-0.5)))
         shape = (nrows,Nx*Ny)
         return sparse.coo_matrix((vals,(row_index,col_index)),shape=shape)
-    
+
     @property
     def By(self):
         Nx, Ny = self.shape
@@ -273,7 +229,7 @@ class InterpLin2:
         vals = np.concatenate((np.full(nrows,-0.5),np.full(nrows,1.0),np.full(nrows,-0.5)))
         shape = (nrows,Nx*Ny)
         return sparse.coo_matrix((vals,(row_index,col_index)),shape=shape)
-    
+
     @property
     def B(self):
         Nx, Ny = self.shape
@@ -290,13 +246,13 @@ class InterpLin2:
         # weight accordint to the number of neighbors
         nn = np.asarray(L.sum(axis=1)).flatten()
         return sparse.eye(shape[0]) - sparse.diags(1/nn)@L
-        
-    
+
+
 class InterpLin1:
     def __init__(self,x,w):
         self.x = x # the points to interpolate on
         self.w = w # the control points, increasing
-        
+
     @property
     def shape(self):
         return self.w.size
@@ -337,7 +293,7 @@ class InterpLin1:
 
 class _BaseModel:
     """Common methods for scaling models"""
-    # properties: 
+    # properties:
     #    x,y,... = coordinates to interpolate at
     #    wx,wy,... = axes of control point grid
     #    u = value at control points
@@ -347,47 +303,45 @@ class _BaseModel:
     @property
     def shape(self):
         pass # implemented in subclass
-    
+
     def interp_matrices(self,*args):
         pass # implemented in subclass
-    
+
     def interp(self,x):
         pass # implemented in subclass
-    
+
     def to_nexus(self):
         pass # implemented in subclass
-    
+
     @staticmethod
     def from_nexus(n):
         pass # implemented in subclass
-    
+
     def to_xarray(self):
         pass # implemented in subclass
-    
+
     @staticmethod
     def from_xarray(da):
         pass # implemented in subclass
-    
+
     def set_u(self,val):
         self.u = val.reshape(self.shape,order='F')
-        
+
     def plot(self,*args,**kwargs):
         self.to_xarray.plot(*args,**kwargs)
-        
+
     def copy(self):
         SM = copy.copy(self)
         SM.u = copy.copy(SM.u)
         return SM
-        
-    
+
+
 class ScalingModel(_BaseModel):
     """A scale factor the varies only along one coordinate"""
     def __init__(self,phi,u=None):
         self.x = phi
-        #if u is None:
-        #    u = np.ones(self.shape,dtype=np.double)
         self.u = u
-    
+
     @property
     def shape(self):
         return self.x.size
@@ -411,34 +365,32 @@ class ScalingModel(_BaseModel):
     @staticmethod
     def from_nexus(nxdata):
         return ScalingModel(nxdata.phi.nxvalue,nxdata.u.nxvalue)
-    
+
     def to_xarray(self):
         da = xr.DataArray(
-            self.u, 
-            dims=("phi"), 
+            self.u,
+            dims=("phi"),
             coords={"phi":self.x})
         return da
-    
+
     @staticmethod
     def from_xarray(da):
         x = da.coords['phi'].data
         return ScalingModel(x,da.data)
-    
-    
+
+
 class AbsorptionModel(_BaseModel):
     """A smooth scale factor the varies along 3 coordinates"""
     def __init__(self,ix,iy,phi,u=None):
         self.x = ix
         self.y = iy
         self.z = phi
-        #if u is None:
-        #    u = np.ones(self.shape,dtype=np.double)
         self.u = u
-        
+
     @property
     def shape(self):
         return self.x.size, self.y.size, self.z.size
-        
+
     def interp_matrices(self,x,y,z):
         Lin3 = InterpLin3(x,y,z,self.x,self.y,self.z)
         return Lin3.A, Lin3.Bxy, Lin3.Bz
@@ -460,14 +412,14 @@ class AbsorptionModel(_BaseModel):
     @staticmethod
     def from_nexus(nxdata):
         return AbsorptionModel(nxdata.ix.nxvalue,nxdata.iy.nxvalue,nxdata.phi.nxvalue,nxdata.u.nxvalue)
-    
+
     def to_xarray(self):
         da = xr.DataArray(
-            self.u, 
-            dims=("ix", "iy", "phi"), 
+            self.u,
+            dims=("ix", "iy", "phi"),
             coords={"ix":self.x, "iy":self.x, "phi":self.z})
         return da
-    
+
     @staticmethod
     def from_xarray(da):
         x = da.coords['ix'].data
@@ -475,16 +427,14 @@ class AbsorptionModel(_BaseModel):
         z = da.coords['phi'].data
         return AbsorptionModel(x,y,z,da.data)
 
-    
+
 class OffsetModel(_BaseModel):
     """A smooth offset the varies along 2 coordinates"""
     def __init__(self,s,phi,u=None):
         self.x = s
         self.y = phi
-        #if u is None:
-        #    u = np.zeros(self.shape,dtype=np.double)
         self.u = u
-        
+
     @property
     def shape(self):
         return self.x.size, self.y.size
@@ -509,33 +459,31 @@ class OffsetModel(_BaseModel):
     @staticmethod
     def from_nexus(nxdata):
         return OffsetModel(nxdata.s.nxvalue,nxdata.phi.nxvalue,nxdata.u.nxvalue)
-    
+
     def to_xarray(self):
         da = xr.DataArray(
-            self.u, 
-            dims=("s", "phi"), 
+            self.u,
+            dims=("s", "phi"),
             coords={"s":self.x, "phi":self.y})
         return da
-    
+
     @staticmethod
     def from_xarray(da):
         x = da.coords['s'].data
         y = da.coords['phi'].data
         return OffsetModel(x,y,da.data)
-    
+
 class DetectorModel(_BaseModel):
     """A smooth scale factor the varies along the detector face"""
     def __init__(self,ix,iy,u=None):
         self.x = ix
         self.y = iy
-        #if u is None:
-        #    u = np.ones(self.shape,dtype=np.double)
         self.u = u
-        
+
     @property
     def shape(self):
         return self.x.size, self.y.size
-        
+
     def interp_matrices(self,x,y):
         Lin3 = InterpLin2(x,y,self.x,self.y)
         return Lin3.A, Lin3.B
@@ -556,21 +504,21 @@ class DetectorModel(_BaseModel):
     @staticmethod
     def from_nexus(nxdata):
         return DetectorModel(nxdata.ix.nxvalue,nxdata.iy.nxvalue,nxdata.u.nxvalue)
-    
+
     def to_xarray(self):
         da = xr.DataArray(
-            self.u, 
-            dims=("ix", "iy"), 
+            self.u,
+            dims=("ix", "iy"),
             coords={"ix":self.x, "iy":self.x})
         return da
-    
+
     @staticmethod
     def from_xarray(da):
         x = da.coords['ix'].data
         y = da.coords['iy'].data
         return AbsorptionModel(x,y,da.data)
 
-    
+
 class ScaledData:
     def __init__(self,I,sigma,ih,phi=None,ix=None,iy=None,s=None,batch=None,scale=None,offset=None,mask=None):
         if scale is None:
@@ -598,7 +546,7 @@ class ScaledData:
             iy = np.full_like(I,np.nan)
         if s is None:
             s = np.full_like(I,np.nan)
-            
+
         self._I = I
         self._sigma = sigma
         self._ih = ih.astype(int)
@@ -610,7 +558,7 @@ class ScaledData:
         self.offset = offset
         self.mask = mask
         self._ihmax = np.max(ih)
-        
+
     def __getitem__(self,ind):
         dset = ScaledData(
                 self._I[ind],
@@ -627,16 +575,16 @@ class ScaledData:
         dset._ihmax = self._ihmax
         #print('DEBUG: sliced dataset. Is scale a copy?',dset.scale.base is None)
         return dset
-    
+
     def batches(self):
         """generator that loops over batches, returning a ScaledData object for each"""
         for sl in self._batches:
             yield self[sl]
-            
+
     @property
     def nbatches(self):
         return len(self._batches)
-            
+
     def _masked(self,arr):
         return np.ma.MaskedArray(data=arr,mask=self.mask,copy=False)
 
@@ -662,19 +610,19 @@ class ScaledData:
     @property
     def phi(self):
         return self._masked(self._phi)
-    
+
     @property
     def ix(self):
         return self._masked(self._ix)
-    
+
     @property
     def iy(self):
         return self._masked(self._iy)
-    
+
     @property
     def s(self):
         return self._masked(self._s)
-    
+
     def predict(self,Imerge):
         return self._masked(self.scale*(Imerge[self._ih] + self.offset))
 
@@ -683,7 +631,6 @@ class ScaledData:
         SD.scale = copy.copy(self.scale)
         SD.offset = copy.copy(self.offset)
         SD.mask = copy.copy(self.mask)
-        #print('DEBUG: copied dataset. Is scale a copy?',SD.scale.base is None)
         return SD
 
     def merge(self):
@@ -699,23 +646,23 @@ class ScaledData:
         Im = Im/wm
         sigmam = 1/np.sqrt(wm)
         return Im, sigmam, counts
-    
+
     def mask_outliers(self,Im,nsigma):
         resid = (self.scale*(Im[self._ih] + self.offset) - self._I)/self._sigma
         isoutlier = (resid > nsigma) & ~(self.mask)
         self.mask[isoutlier] = True # apply outlier masks
         return isoutlier.sum()
 
-    
+
 class _ModelRefiner:
     def __init__(self,data,model=None):
         self.data = data
         self.model = model
         self._value = None # cached value of the interpolated model at datapoints
-        
+
     def calc_scale_offset(self,a=None,b=None,c=None,d=None):
         scale = np.ones_like(self.data._I,dtype=np.double)
-        offset = np.zeros_like(scale)       
+        offset = np.zeros_like(scale)
         if a is None:
             a = 1.0
         if b is None:
@@ -727,7 +674,7 @@ class _ModelRefiner:
         scale *= a*b*d
         offset += c/b
         return scale, offset
-    
+
     def _calc_points(self,x,dx=1,nx=None,integer_limits=True,x_min=None,x_max=None):
         if x_min is None:
             x_min = np.min(x)
@@ -739,40 +686,40 @@ class _ModelRefiner:
         if nx is None:
             nx = np.round((x_max-x_min)/dx).astype(int) + 1
         return np.linspace(x_min,x_max,nx)
-    
+
     def add_model(self,*args,**kwargs):
         raise NotImplementedError
-    
+
     def calc_problem(self,Imerge,**kwargs):
         raise NotImplementedError
-    
+
     def fit(self,Imerge,**kwargs):
         raise NotImplementedError
-    
+
     @property
     def value(self):
         if self._value is None:
             self._value = self.calc_value()
         return self._value
-    
+
     def refine(self,Imerge,*args,**kwargs):
         ufit, x2 = self.fit(Imerge,*args,**kwargs)
         self.model.set_u(ufit)
         self._value = None # trigger re-calculation when requested
         return x2
-    
+
 class ScalingModelRefiner(_ModelRefiner):
-                
+
     def add_model(self,dphi=1,nearest_degree=True,nphi=None):
         phi_points = self._calc_points(self.data.phi,dx=dphi,integer_limits=nearest_degree,nx=nphi)
         self.model = ScalingModel(phi_points)
         return self
-    
+
     def calc_value(self):
         if self.model is None:
             return 1.0
         return self.model.interp(self.data._phi)
-    
+
     def calc_problem(self,Imerge,a=None,c=None,d=None):
         A0, B = self.model.interp_matrices(
             self.data.phi.compressed(),
@@ -782,12 +729,12 @@ class ScalingModelRefiner(_ModelRefiner):
         tmp = self.data.copy()
         tmp.scale, tmp.offset = self.calc_scale_offset()
         Ipred = tmp.predict(Imerge).compressed()
-        
+
         # compute scaled intensities with b = 1
         tmp.scale, tmp.offset = self.calc_scale_offset(a=a,c=c,d=d)
         I = tmp.I.compressed()
         sigma = tmp.sigma.compressed()
-        
+
         # compute fitting matrices
         A = sparse.diags(Ipred/sigma) @ A0
         y = I/sigma
@@ -796,7 +743,7 @@ class ScalingModelRefiner(_ModelRefiner):
         Ay = A.T @ y
         yy = np.sum(y**2)
         return AA, BB, Ay, yy
-    
+
     def fit(self,Imerge,alpha_mult,a=None,c=None,d=None):
         AA, BB, Ay, yy = self.calc_problem(Imerge,a=a,c=c,d=d)
         alpha = alpha_mult*AA.trace()/BB.trace()
@@ -810,13 +757,13 @@ class ScalingModelRefiner(_ModelRefiner):
         return ufit, x2
 
 class AbsorptionModelRefiner(_ModelRefiner):
-        
+
     def add_model(self,dphi=10,nearest_degree=True,nphi=None,nix=20,dix=None,niy=20,diy=None):
         phi_points = self._calc_points(self.data.phi,dx=dphi,integer_limits=nearest_degree,nx=nphi)
         ix_points = self._calc_points(self.data.ix,dx=dix,integer_limits=True,nx=nix)
         iy_points = self._calc_points(self.data.iy,dx=diy,integer_limits=True,nx=niy)
         self.model = AbsorptionModel(ix_points,iy_points,phi_points)
-        
+
     def calc_value(self):
         if self.model is None:
             return 1.0
@@ -827,18 +774,18 @@ class AbsorptionModelRefiner(_ModelRefiner):
             self.data.ix.compressed(),
             self.data.iy.compressed(),
             self.data.phi.compressed(),
-        ) 
-        
+        )
+
         # compute predicted intensities a = 1
         tmp = self.data.copy()
         tmp.scale, tmp.offset = self.calc_scale_offset(b=b,c=c,d=d)
         Ipred = tmp.predict(Imerge).compressed()
-        
+
         # compute scaled intensities with a = b = d = 1, c = 0
         tmp.scale, tmp.offset = self.calc_scale_offset()
         I = tmp.I.compressed()
         sigma = tmp.sigma.compressed()
-        
+
         # compute fitting matrices
         A = sparse.diags(Ipred/sigma) @ A0
         y = I/sigma
@@ -847,9 +794,9 @@ class AbsorptionModelRefiner(_ModelRefiner):
         BBz = Bz.T @ Bz
         Ay = A.T @ y
         yy = np.sum(y**2)
-        
+
         return AA, BBxy, BBz, Ay, yy
-    
+
     def fit(self,Imerge,alpha_xy_mult,alpha_z_mult,b=None,c=None,d=None):
         AA, BBxy, BBz, Ay, yy = self.calc_problem(Imerge,b=b,c=c,d=d)
         alpha_xy = alpha_xy_mult*AA.trace()/BBxy.trace()
@@ -863,36 +810,36 @@ class AbsorptionModelRefiner(_ModelRefiner):
         x2 = x2/self.data.ih.count()
         self.model.set_u(ufit)
         return ufit, x2
-    
+
 class OffsetModelRefiner(_ModelRefiner):
-    
+
     def add_model(self,dphi=2.5,nearest_degree=True,nphi=None,ns=31,ds=None):
         phi_points = self._calc_points(self.data.phi,dx=dphi,integer_limits=nearest_degree,nx=nphi)
         s_points = self._calc_points(self.data.s,dx=ds,integer_limits=False,nx=ns)
         self.model = OffsetModel(s_points,phi_points)
         return self
-    
+
     def calc_value(self):
         if self.model is None:
             return 0.0
         return self.model.interp(self.data._s,self.data._phi)
-    
+
     def calc_problem(self,Imerge,a=None,b=None,d=None):
         A0, Bx, By = self.model.interp_matrices(
             self.data.s.compressed(),
             self.data.phi.compressed(),
-        ) 
-        
+        )
+
         # compute predicted intensities a = 1, c = 0
         tmp = self.data.copy()
         tmp.scale, tmp.offset = self.calc_scale_offset(b=b)
         Ipred = tmp.predict(Imerge).compressed()
-        
+
         # compute scaled intensities with b = 1 and c = 0
         tmp.scale, tmp.offset = self.calc_scale_offset(a=a,d=d)
         I = tmp.I.compressed()
         sigma = tmp.sigma.compressed()
-        
+
         # compute fitting matrices
         A = sparse.diags(1/sigma) @ A0
         y = (I-Ipred)/sigma
@@ -903,7 +850,7 @@ class OffsetModelRefiner(_ModelRefiner):
         yy = np.sum(y**2)
         H = sparse.eye(A.shape[1])
         return AA, BBx, BBy, H, Ay, yy
-    
+
     def fit(self,Imerge,alpha_x_mult,alpha_y_mult,alpha_c_mult,min_c,a=None,b=None,d=None):
         AA, BBx, BBy, H, Ay, yy = self.calc_problem(Imerge,a=a,b=b,d=d)
         alpha_x = alpha_x_mult*AA.trace()/BBx.trace()
@@ -920,37 +867,37 @@ class OffsetModelRefiner(_ModelRefiner):
         if min_c is not None:
             ufit[ufit < min_c] = min_c   # apply threshold
             ufit += min_c - np.min(ufit) # level shift
-        
+
         return ufit, x2
-    
+
 class DetectorModelRefiner(_ModelRefiner):
 
     def add_model(self,nix=20,dix=None,niy=20,diy=None):
         ix_points = self._calc_points(self.data.ix,dx=dix,integer_limits=True,nx=nix)
         iy_points = self._calc_points(self.data.iy,dx=diy,integer_limits=True,nx=niy)
         self.model = DetectorModel(ix_points,iy_points)
-        
+
     def calc_value(self):
         if self.model is None:
             return 1.0
         return self.model.interp(self.data._ix,self.data._iy)
-    
+
     def calc_problem(self,Imerge,a=None,b=None,c=None):
         A0, B = self.model.interp_matrices(
             self.data.ix.compressed(),
             self.data.iy.compressed(),
-        ) 
-        
+        )
+
         # compute predicted intensities d = 1
         tmp = self.data.copy()
         tmp.scale, tmp.offset = self.calc_scale_offset(a=a,b=b,c=c)
         Ipred = tmp.predict(Imerge).compressed()
-        
+
         # compute scaled intensities with a = b = d = 1, c = 0
         tmp.scale, tmp.offset = self.calc_scale_offset()
         I = tmp.I.compressed()
         sigma = tmp.sigma.compressed()
-        
+
         # compute fitting matrices
         A = sparse.diags(Ipred/sigma) @ A0
         y = I/sigma
@@ -958,9 +905,9 @@ class DetectorModelRefiner(_ModelRefiner):
         BB = B.T @ B
         Ay = A.T @ y
         yy = np.sum(y**2)
-        
+
         return AA, BB, Ay, yy
-    
+
     def fit(self,Imerge,alpha_mult,a=None,b=None,c=None):
         AA, BB, Ay, yy = self.calc_problem(Imerge,a=a,b=b,c=c)
         alpha = alpha_mult*AA.trace()/BB.trace()
@@ -972,7 +919,7 @@ class DetectorModelRefiner(_ModelRefiner):
         x2 = ufit @ AA @ ufit - 2*ufit @ Ay + yy
         x2 = x2/self.data.ih.count()
         return ufit, x2
-    
+
 
 class CombinedModelRefiner:
     def __init__(self,data,scaling_model=None,absorption_model=None,offset_model=None,detector_model=None):
@@ -981,7 +928,7 @@ class CombinedModelRefiner:
         self.absorption = AbsorptionModelRefiner(data,absorption_model)
         self.offset = OffsetModelRefiner(data,offset_model)
         self.detector = DetectorModelRefiner(data,detector_model)
-        
+
     @property
     def a(self):
         return self.absorption.value
@@ -1000,7 +947,7 @@ class CombinedModelRefiner:
 
     def calc_scale_offset(self):
         scale = np.ones_like(self.data._I,dtype=np.double)
-        offset = np.zeros_like(scale)       
+        offset = np.zeros_like(scale)
         a = self.a
         b = self.b
         c = self.c
@@ -1012,91 +959,89 @@ class CombinedModelRefiner:
     def apply(self):
         """ apply the scaling model to the data """
         self.data.scale[:], self.data.offset[:] = self.calc_scale_offset()
-        
+
     def bfit(self,*args,**kwargs):
         return self.scaling.refine(*args,a=self.a,c=self.c,d=self.d,**kwargs)
-    
+
     def afit(self,*args,**kwargs):
         return self.absorption.refine(*args,b=self.b,c=self.c,d=self.d,**kwargs)
-    
+
     def dfit(self,*args,**kwargs):
         return self.detector.refine(*args,a=self.a,b=self.b,c=self.c,**kwargs)
-    
+
     def cfit(self,*args,**kwargs):
         return self.offset.refine(*args,a=self.a,b=self.b,d=self.d,**kwargs)
-    
+
 class BatchModelRefiner:
     def __init__(self,data,scaling_models=None,absorption_models=None,offset_models=None,detector_model=None):
         self.data = data
         self._batch_refiners = []
-        
+
         if scaling_models is None:
             scaling_models = [None]*self.data.nbatches
         if absorption_models is None:
             absorption_models = [None]*self.data.nbatches
         if offset_models is None:
             offset_models = [None]*self.data.nbatches
-            
+
         for ds, sm, am, om in zip(self.data.batches(),scaling_models,absorption_models,offset_models):
             self._batch_refiners.append(CombinedModelRefiner(ds,sm,am,om,detector_model))
-            
+
         self.detector = DetectorModelRefiner(data,detector_model)
-        
+
     def add_scaling_models(self,*args,**kwargs):
         [br.scaling.add_model(*args,**kwargs) for br in self._batch_refiners]
-        
+
     def add_offset_models(self,*args,**kwargs):
         [br.offset.add_model(*args,**kwargs) for br in self._batch_refiners]
-        
+
     def add_absorption_models(self,*args,**kwargs):
         [br.absorption.add_model(*args,**kwargs) for br in self._batch_refiners]
-        
+
     def add_detector_model(self,*args,**kwargs):
         tmp = DetectorModelRefiner(self.data)
         tmp.add_model(*args,**kwargs)
         self.detector = tmp
         for br in self._batch_refiners:
             br.detector.model = self.detector.model
-            
+
     def bfit(self,*args,**kwargs):
         x2 = [br.bfit(*args,**kwargs) for br in self._batch_refiners]
         return np.mean(x2)
-    
+
     def afit(self,*args,**kwargs):
         x2 = [br.afit(*args,**kwargs) for br in self._batch_refiners]
         return np.mean(x2)
-    
+
     def cfit(self,*args,**kwargs):
         x2 = [br.cfit(*args,**kwargs) for br in self._batch_refiners]
         return np.mean(x2)
-    
+
     @property
     def a(self):
         vals = []
         for br in self._batch_refiners:
             vals.append(br.a*np.ones_like(br.data._I,dtype=np.double))
         return np.concatenate(vals)
-        
+
     @property
     def b(self):
         vals = []
         for br in self._batch_refiners:
             vals.append(br.b*np.ones_like(br.data._I,dtype=np.double))
         return np.concatenate(vals)
-        
+
     @property
     def c(self):
         vals = []
         for br in self._batch_refiners:
             vals.append(br.c*np.ones_like(br.data._I,dtype=np.double))
         return np.concatenate(vals)
-    
+
     def dfit(self,*args,**kwargs):
         for br in self._batch_refiners:
             br.detector._value = None # trigger re-compute on next apply
         return self.detector.refine(*args,a=self.a,b=self.b,c=self.c,**kwargs)
-        
+
     def apply(self):
         [br.apply() for br in self._batch_refiners]
-        
-    

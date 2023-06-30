@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
-
+from joblib import Parallel, delayed
 from nexusformat.nexus import NXfield, NXdata, NXgroup, NXreflections
 
 from mdx2.dxtbx_machinery import Experiment
@@ -232,19 +232,19 @@ class ImageSeries:
     @property
     def data_masked(self):
         return np.ma.masked_equal(self._as_np(self.data),self._maskval,copy=False)
-    
+
     def bin_down(self,bins,valid_range=None,count_rate=True,nproc=1):
-        
+
         bins = np.array(bins)
         nbins = np.ceil(self.shape/bins).astype(int)
         sl_0 = slice_sections(self.shape[0],nbins[0])
         sl_1 = slice_sections(self.shape[1],nbins[1])
         sl_2 = slice_sections(self.shape[2],nbins[2])
-        
+
         new_phi = np.array([self.phi[sl].mean() for sl in sl_0])
         new_iy = np.array([self.iy[sl].mean() for sl in sl_1])
         new_ix = np.array([self.ix[sl].mean() for sl in sl_2])
-        
+
         def binslab(sl):
             outslab = np.empty([len(sl_1),len(sl_2)],dtype=float)
             tmp = self._as_np(self.data[sl,:,:])
@@ -258,7 +258,7 @@ class ImageSeries:
                         val = np.nan
                     outslab[ind_y,ind_x] = val
             return outslab
-        
+
         if nproc==1:
             slabs = []
             for ind,sl in enumerate(sl_0):
@@ -266,16 +266,15 @@ class ImageSeries:
                 slabs.append(binslab(sl))
             new_data = np.stack(slabs)
         else:
-            from joblib import Parallel, delayed
             with Parallel(n_jobs=nproc,verbose=10) as parallel:
                 new_data = np.stack(parallel(delayed(binslab)(sl) for sl in sl_0))
-            
+
         if count_rate:
             new_times = np.array([self.exposure_times[sl].mean() for sl in sl_0])
             new_data = new_data/new_times[:,np.newaxis,np.newaxis]
-            
+
         return GridData((new_phi,new_iy,new_ix),new_data,axes_names=['phi','iy','ix'])
-        
+
 
     @property
     def chunks(self):
@@ -347,7 +346,7 @@ class ImageSeries:
 #        peaks = Peaks.stack(peaklist)
 #        if verbose: print(f'found {peaks.size} peaks in total')
 #        return peaks
-    
+
     def find_peaks_above_threshold(self,threshold,verbose=True,nproc=1):
         """find pixels above a threshold"""
         def peaksearch(sl):
@@ -356,7 +355,7 @@ class ImageSeries:
             peaks = Peaks.where(im_data>threshold,ims.phi,ims.iy,ims.ix)
             if peaks.size:
                 return peaks
-            
+
         if nproc==1:
             peaklist = []
             for ind,sl in enumerate(self.chunk_slice_iterator()):
@@ -366,7 +365,6 @@ class ImageSeries:
                     peaklist.append(peaks)
             peaks = Peaks.stack(peaklist)
         else:
-            from joblib import Parallel, delayed
             with Parallel(n_jobs=nproc,verbose=10) as parallel:
                 peaklist = parallel(delayed(peaksearch)(sl) for sl in self.chunk_slice_iterator())
             peaks = Peaks.stack([p for p in peaklist if p is not None])

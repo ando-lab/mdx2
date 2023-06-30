@@ -13,6 +13,14 @@ A detailed walkthrough is included. See ![tutorials/insulin/README.md](tutorials
 
 ## Versions
 
+### Version 0.4.0
+
+New:
+- Implementation of the full scaling model from mdx-lib
+- Scale and merge multi-sweep datasets
+- Parallel processing
+- Improved handling of systematic absences
+
 ### Version 0.3.0
 
 Features:
@@ -35,6 +43,6 @@ Limitations:
 ```
 conda create --name mdx2 python=3.10
 conda activate mdx2
-conda install -c conda-forge dxtbx nexusformat pandas numexpr
+conda install -c conda-forge dxtbx nexusformat pandas numexpr joblib
 pip install git+https://github.com/ando-lab/mdx2.git
 ```

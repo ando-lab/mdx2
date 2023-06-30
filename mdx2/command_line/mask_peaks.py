@@ -5,6 +5,7 @@ Create a peak mask for in an image stack
 import argparse
 
 import numpy as np
+from joblib import Parallel, delayed
 
 from mdx2.utils import saveobj, loadobj
 from mdx2.geometry import GridData
@@ -24,7 +25,7 @@ def parse_arguments():
     parser.add_argument("--sigma_cutoff", metavar='SIGMA', default=3, type=float, help="\sigma value to draw the peak mask")
     parser.add_argument("--outfile", default="mask.nxs", help="name of the output NeXus file")
     parser.add_argument("--nproc", type=int, default=1, metavar='N', help="number of parallel processes")
-    
+
     return parser
 
 def run(args=None):
@@ -50,16 +51,15 @@ def run(args=None):
         dl = MIdense.l - L
         isrefl = Symm.is_reflection(H,K,L)
         return isrefl & GP.mask(dh,dk,dl,sigma_cutoff=args.sigma_cutoff)
-        
+
     # loop over phi values
     print(f'masking peaks with sigma above threshold: {args.sigma_cutoff}')
-    
+
     if args.nproc == 1:
         for ind,sl in enumerate(IS.chunk_slice_iterator()):
             print(f'indexing chunk {ind}')
             mask[sl] = maskchunk(sl)
     else:
-        from joblib import Parallel, delayed
         with Parallel(n_jobs=args.nproc,verbose=10) as parallel:
             masklist = parallel(delayed(maskchunk)(sl) for sl in IS.chunk_slice_iterator())
         for msk,sl in zip(masklist,IS.chunk_slice_iterator()):

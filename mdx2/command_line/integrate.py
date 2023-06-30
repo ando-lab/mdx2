@@ -6,12 +6,12 @@ import argparse
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
+from nexusformat.nexus import nxload # mask is too big to read all at once?
 
 from mdx2.utils import saveobj, loadobj
 from mdx2.data import ImageSeries
 from mdx2.data import HKLTable
-from nexusformat.nexus import nxload # mask is too big to read all at once?
-#from . import MDX2Parser
 
 def parse_arguments():
     """Parse commandline arguments"""
@@ -57,7 +57,7 @@ def run(args=None):
     ndiv = args.subdivide
 
     max_degrees = args.max_spread
-    
+
     def intchunk(sl):
         ims = IS[sl]
         if mask is not None:
@@ -66,7 +66,7 @@ def run(args=None):
             tab = ims.index(MI)
         tab.ndiv = ndiv
         return tab.bin(count_name='pixels')
-    
+
     if args.nproc == 1:
         T = [] # list of tables
         print(f'Looping through chunks')
@@ -74,7 +74,7 @@ def run(args=None):
             T.append(intchunk(sl))
             print(f'  binned chunk {ind}')
     else:
-        from joblib import Parallel, delayed
+
         with Parallel(n_jobs=args.nproc,verbose=10) as parallel:
             T = parallel(delayed(intchunk)(sl) for sl in IS.chunk_slice_iterator())
 

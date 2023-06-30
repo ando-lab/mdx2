@@ -31,6 +31,8 @@ setup(
         "scipy",
         "dxtbx", # needs to be installed with conda
         "nexusformat",
+        "joblib",
+        "numexpr",
     ],
     entry_points={
         'console_scripts': [
