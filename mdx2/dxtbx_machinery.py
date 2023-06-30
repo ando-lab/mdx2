@@ -1,5 +1,6 @@
 
 import numpy as np
+import re
 
 from dxtbx.model.experiment_list import ExperimentList
 
@@ -70,7 +71,12 @@ class Experiment:
         sg = symm.space_group()
         sgi = sg.info()
         asu = sgi.reciprocal_space_asu()
-        return asu.reference_as_string()
+        asu_str = asu.reference_as_string()
+        # make substitutions for numpy compatibility
+        asu_str = re.sub(r'([hkl0\<\>\=]+)',r'(\1)',asu_str)
+        asu_str = re.sub('and',r'&',asu_str)
+        asu_str = re.sub('or',r'|',asu_str)
+        return asu_str
 
     @property
     def space_group_operators(self):
@@ -119,7 +125,12 @@ class Experiment:
     @property
     def scan_axes(self):
         return self.calc_scan_axes()
-
+    
+    @property
+    def reflection_conditions(self):
+        sg = self._crystal.get_space_group()
+        centering_type = sg.conventional_centring_type_symbol()
+        return lookup_reflection_conditions(centering_type)
 
     def calc_scan_axes(self,centered=True,samples=None,spacing=None):
         nx,ny = self.image_size
@@ -278,6 +289,54 @@ class ImageSet:
             for start in range(0,nframes,buffer):
                 stop = min(start + buffer,nframes)
                 target_array[start:stop,:,:] = self.read_stack(start,stop)
+                
+#    def read_all_parallel(self,target_array,buffer=1,nproc=1):
+#        from joblib import Parallel, delayed
+#        nframes = self.num_frames
+#        with Parallel(n_jobs=nproc) as parallel:
+#            for start in range(0,nframes,buffer):
+#                stop = min(start + buffer,nframes)
+#                res = parallel(delayed(self.read_frame)(ind) for ind in range(start,stop))
+#                target_array[start:stop,:,:] = np.stack(res)
+                
+    def read_all_parallel(self,target_array,buffer=1,nproc=1,verbose=True):
+        from joblib import Parallel, delayed
+        from multiprocessing import Process, JoinableQueue
+        
+        def nxswriter(q):
+            while True:
+                val = q.get()
+                if val is None: break
+                start,stop,arr = val # unpack the tuple
+                if verbose: print(f'{self.__class__.__name__}: writing block to nexus file: {start}-{stop}')
+                target_array[start:stop,:,:] = arr
+                q.task_done()
+            # Finish up
+            q.task_done()
+        
+        q = JoinableQueue(maxsize=2)
+        writeprocess = Process(target=nxswriter, args=(q,))
+        writeprocess.start()
+        
+        nframes = self.num_frames
+        with Parallel(n_jobs=nproc) as parallel:
+            for start in range(0,nframes,buffer):
+                stop = min(start + buffer,nframes)
+                res = parallel(delayed(self.read_frame)(ind) for ind in range(start,stop))
+                q.put((start,stop,np.stack(res)))
+        q.put(None) # Poison pill
+        q.join()
+        writeprocess.join()
+                
+  #  def read_all_parallel(self,target_array,buffer=1,nproc=1):
+  #      """version of read_all that distributes the task among workers"""
+  #      from joblib import Parallel, delayed # required package only for parallel code -- still testing
+  #      nframes = self.num_frames
+  #      slices = [slice(start,min(start + buffer,nframes)) for start in range(0,nframes,buffer)]
+  #      def rwtask(targ,sl):
+  #          targ[sl,:,:] = self.read_stack(sl.start,sl.stop)
+  #      Parallel(n_jobs=nproc)(delayed(rwtask)(target_array, sl) for sl in slices)
+        
 
     # HACK... maybe do this in a commandline tool instead?
     #def init_nexus_image_stack(self):
@@ -431,3 +490,37 @@ def calc_d3s(beam,scan,solidAngle,Linv):
     wlen = beam.get_wavelength()
     dphi_radians = dphi*np.pi/180
     return Linv*solidAngle*dphi_radians/wlen**3
+
+def lookup_reflection_conditions(centering_type):
+    # reflection conditions due to centering
+    # see: https://dictionary.iucr.org/Reflection_conditions
+    
+    if centering_type == 'P':
+        return 'True'
+    elif centering_type == 'F':
+        # h + k, h + l and k + l = 2n or: h, k, l all odd or all even
+        return '(((h + k) % 2 == 0) & ((h + l) % 2 == 0) & ((k + l) % 2 == 0)) | ((h % 2 == k % 2) & (h % 2 == l % 2))'
+    elif centering_type == 'I':
+        # h + k + l = 2n
+        return '(h + k + l) % 2 == 0'
+    elif centering_type == 'A':
+        # k + l = 2n
+        return '(k + l) % 2 == 0'
+    elif centering_type == 'B':
+        # l + h = 2n
+        return '(l + h) % 2 == 0'
+    elif centering_type == 'C':
+        # h + k = 2n
+        return '(h + k) % 2 == 0'
+    elif centering_type == 'D':
+        # h + k + l = 3n
+        return '(h + k + l) % 3 == 0'
+    elif centering_type =='H':
+        # h − k = 3n
+        return '(h - k) % 3 == 0'
+    elif centering_type == 'R':
+        # − h + k + l = 3n (standard obverse setting)
+        return '(- h + k + l) % 3 == 0'
+    else:
+        # centering type not recognized!
+        return None
