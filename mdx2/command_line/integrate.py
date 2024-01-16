@@ -6,12 +6,12 @@ import argparse
 
 import numpy as np
 import pandas as pd
+from joblib import Parallel, delayed
+from nexusformat.nexus import nxload # mask is too big to read all at once?
 
 from mdx2.utils import saveobj, loadobj
 from mdx2.data import ImageSeries
 from mdx2.data import HKLTable
-from nexusformat.nexus import nxload # mask is too big to read all at once?
-#from . import MDX2Parser
 
 def parse_arguments():
     """Parse commandline arguments"""
@@ -29,6 +29,7 @@ def parse_arguments():
     #parser.add_argument("--limits", nargs=6, metavar=('hmin,hmax,kmin,kmax,lmin,lmax'), type=float, help="included region")
     parser.add_argument("--max_spread", type=float, default=1.0, metavar='DEGREES', help="maximum angular spread for binning partial observations")
     parser.add_argument("--outfile", default="integrated.nxs", help="name of the output NeXus file")
+    parser.add_argument("--nproc", type=int, default=1, metavar='N', help="number of parallel processes")
 
     return parser
 
@@ -57,20 +58,25 @@ def run(args=None):
 
     max_degrees = args.max_spread
 
-    T = [] # list of tables
-    print(f'Looping through chunks')
-    for ind,sl in enumerate(IS.chunk_slice_iterator()):
+    def intchunk(sl):
         ims = IS[sl]
         if mask is not None:
             tab = ims.index(MI,mask=mask[sl].nxdata) # added nxdata to deal with NXfield wrapper
         else:
             tab = ims.index(MI)
         tab.ndiv = ndiv
-        tab_binned = tab.bin(count_name='pixels')
+        return tab.bin(count_name='pixels')
 
-        print(f'  binned chunk {ind} from {len(tab)} to {len(tab_binned)} voxels')
-        T.append(tab_binned)
-        #if ind > 5: break # for debugging
+    if args.nproc == 1:
+        T = [] # list of tables
+        print(f'Looping through chunks')
+        for ind,sl in enumerate(IS.chunk_slice_iterator()):
+            T.append(intchunk(sl))
+            print(f'  binned chunk {ind}')
+    else:
+
+        with Parallel(n_jobs=args.nproc,verbose=10) as parallel:
+            T = parallel(delayed(intchunk)(sl) for sl in IS.chunk_slice_iterator())
 
     print(f'Summing partial observations over {len(T)} chunks')
     df = HKLTable.concatenate(T).to_frame()#.set_index(['h','k','l'])

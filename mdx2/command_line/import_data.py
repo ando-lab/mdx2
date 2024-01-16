@@ -24,7 +24,7 @@ def parse_arguments():
     parser.add_argument("expt", help="experiments file, such as from dials.import")
     parser.add_argument("--outfile", default="data.nxs", help="name of the output NeXus file")
     parser.add_argument("--chunks", nargs=3, type=int, metavar='N', help="chunking for compression (frames, y, x)")
-
+    parser.add_argument("--nproc", type=int, default=1, metavar='N', help="number of parallel processes")
     return parser
 
 def run(args=None):
@@ -41,7 +41,12 @@ def run(args=None):
 
     nxs = saveobj(image_series,args.outfile,name='image_series')
 
-    iset.read_all(image_series.data,image_series.data.chunks[0])
+    nbatches = image_series.data.chunks[0]
+    
+    if args.nproc == 1:
+        iset.read_all(image_series.data,nbatches)
+    else:
+        iset.read_all_parallel(image_series.data,nbatches,args.nproc)
 
     print("done!")
 

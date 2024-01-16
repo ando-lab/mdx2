@@ -6,10 +6,11 @@ import argparse
 
 import numpy as np
 #import pandas as pd
+from nexusformat.nexus import nxload
 
 from mdx2.utils import saveobj, loadobj
 from mdx2.data import HKLTable
-from mdx2.scaling import ScaledData
+from mdx2.scaling import ScaledData, BatchModelRefiner
 
 def parse_arguments():
     """Parse commandline arguments"""
@@ -20,36 +21,138 @@ def parse_arguments():
     )
 
     # Required arguments
-    parser.add_argument("hkl", help="NeXus file with hkl_table")
-    parser.add_argument("--scale", help="NeXus file with scaling_model")
-    parser.add_argument("--outfile", default="merged.nxs", help="name of the output NeXus file")
+    parser.add_argument("hkl", 
+                        nargs='+', 
+                        help="NeXus file(s) with hkl_table")
+    parser.add_argument("--scale", 
+                        nargs='+', 
+                        help="NeXus file(s) with scaling models")
+    parser.add_argument("--outfile", 
+                        default="merged.nxs", 
+                        help="name of the output NeXus file")
+    parser.add_argument('--outlier',
+                        type=float,
+                        metavar="NSIGMA",
+                        help="optional standard error cutoff for outlier rejection")
+    parser.add_argument('--split',
+                        choices=['randomHalf','weightedRandomHalf','Friedel'], # TODO: batch, Laue, Friedel, etc
+                        help="also merge data into separate columns based on splitting criteria",
+                       )
+    parser.add_argument('--geometry',
+                        help="NeXus file containing the Laue group symmetry operators, required if --split is 'Friedel'")
 
     return parser
+
+def wrs(index_map,w):
+    """weigted random split -- vectorized version"""
+    index_jitter = np.random.random_sample(index_map.shape)*.2
+    sort_order = np.argsort(index_map + index_jitter)
+
+    sorted_ind_map = index_map[sort_order]
+    sorted_w = w[sort_order]
+    breakpoints = [0] + list(np.nonzero(np.diff(sorted_ind_map))[0] + 1) + [len(sorted_ind_map)]
+    starts = np.array(breakpoints[:-1])
+    stops = np.array(breakpoints[1:])
+
+    isgrp1 = np.full_like(index_map,False,dtype=bool)
+    flips = np.random.randint(2,size=len(starts))
+    cs = np.cumsum(sorted_w)
+    dcs = cs - cs[starts][sorted_ind_map]
+    isincl = dcs > 0.5*dcs[stops-1][sorted_ind_map]
+    isincl = np.logical_xor(flips[sorted_ind_map],isincl)
+    isgrp1[sort_order[isincl]] = True
+    return isgrp1
 
 def run(args=None):
     parser = parse_arguments()
     args = parser.parse_args(args)
 
-    T = loadobj(args.hkl,'hkl_table')
+    # load data into a giant table
+    tabs = []
 
+    for n, fn in enumerate(args.hkl):
+        tmp = loadobj(fn,'hkl_table')
+        tmp.batch = n*np.ones_like(tmp.op)
+        tabs.append(tmp)
+
+    hkl = HKLTable.concatenate(tabs)
 
     print('Grouping redundant observations')
-    (h,k,l), index_map, counts = T.unique()
+    (h,k,l), index_map, counts = hkl.unique()
+    
+    S = ScaledData(
+        hkl.intensity,
+        hkl.intensity_error,
+        index_map,
+        phi=hkl.phi,
+        s=hkl.s,
+        ix=hkl.ix,
+        iy=hkl.iy,
+        batch=hkl.batch,
+    )
 
-    S = ScaledData(T.intensity,T.intensity_error,index_map,T.phi)
-
+    MR = BatchModelRefiner(S)
+    
     if args.scale is not None:
-        M = loadobj(args.scale,'scaling_model')
-        print('Calculating scales')
-        S.apply(M)
+        for fn, refiner in zip(args.scale, MR._batch_refiners):
+            a = nxload(fn)
+            if 'absorption_model' in a.entry.keys():
+                refiner.absorption.model = loadobj(fn,'absorption_model')
+            if 'offset_model' in a.entry.keys():
+                refiner.offset.model = loadobj(fn,'offset_model')
+            if 'detector_model' in a.entry.keys():
+                refiner.detector.model = loadobj(fn,'detector_model')
+            if 'scaling_model' in a.entry.keys():
+                refiner.scaling.model = loadobj(fn,'scaling_model')
+    
+    print(f"applying scale factors")
+    MR.apply()
+    print(f"merging")
+    Im,sigmam,counts = MR.data.merge()
 
-    print('Merging')
-    intensity,intensity_error,count = S.merge()
+    if args.outlier is not None:
+        nout = MR.data.mask_outliers(Im,args.outlier) 
+        print(f"removed {nout} outliers > {args.outlier} sigma")  
+        print(f"merging again")
+        Im,sigmam,counts = MR.data.merge()
 
-    hkl_table = HKLTable(h,k,l,ndiv=T.ndiv)
-    hkl_table.intensity=intensity.filled(fill_value=np.nan).astype(np.float32)
-    hkl_table.intensity_error=intensity_error.filled(fill_value=np.nan).astype(np.float32)
-    hkl_table.count=count.astype(np.int32)
+    cols = dict(
+        intensity=Im.filled(fill_value=np.nan).astype(np.float32),
+        intensity_error=sigmam.filled(fill_value=np.nan).astype(np.float32),
+        count=counts.astype(np.int32),
+    )
+    
+    if args.split is not None:
+        if args.split == 'weightedRandomHalf':
+            print('Splitting according to the weighted random half algorithm')
+            w = 1/MR.data.sigma**2
+            isgrp1 = wrs(index_map,w.filled(fill_value=0))
+            groups = [isgrp1,~isgrp1]           
+        elif args.split == 'randomHalf':
+            print('Splitting into random half-datasets (unweighted)')
+            isgrp1 = wrs(index_map,np.ones_like(index_map))
+            groups = [isgrp1,~isgrp1]
+        elif args.split == 'Friedel':
+            print('Splitting into Friedel pairs')
+            if args.geometry is None:
+                raise('--geometry argument is required for symmetry-based splitting')
+            symm = loadobj(args.geometry,'symmetry')
+            has_inversion = np.array([np.linalg.det(op) for op in symm.laue_group_operators]) < 0
+            isminus = has_inversion[hkl.op]
+            groups = [~isminus,isminus]
+        else:
+            raise('something bad happened')
+        for j,g in enumerate(groups):
+            G = MR.data.copy()
+            G.mask = G.mask | ~g
+            print(f'Merging group {j}')
+            Imj,sigmamj,countsj = G.merge()
+            cols[f"group_{j}_intensity"] = Imj.filled(fill_value=np.nan).astype(np.float32)
+            cols[f"group_{j}_intensity_error"] = sigmamj.filled(fill_value=np.nan).astype(np.float32)
+            cols[f"group_{j}_count"] = countsj.astype(np.int32)
+        
+    # create the output table object
+    hkl_table = HKLTable(h,k,l,ndiv=hkl.ndiv,**cols)
 
     #ndiv = T.ndiv # save for later
 

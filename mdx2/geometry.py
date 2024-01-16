@@ -281,22 +281,18 @@ class Symmetry:
         # lazy constructor....
         self.__dict__.update(kwargs)
 
-    @property
-    def _asu_test_np(self):
-        # make substitutions for numpy compatibility
-        str = self.reciprocal_space_asu
-        str = re.sub(r'([hkl0\<\>\=]+)',r'(\1)',str)
-        str = re.sub('and',r'&',str)
-        str = re.sub('or',r'|',str)
-        return str
-
     def is_asu(self,h,k,l):
+        return self._test_reflections(h,k,l,self.reciprocal_space_asu)
+    
+    def is_reflection(self,h,k,l):
+        return self._test_reflections(h,k,l,self.reflection_conditions)
+    
+    def _test_reflections(self,h,k,l,nexpr):
         if not isinstance(h,np.ndarray):
             h = np.array(h)
             k = np.array(k)
             l = np.array(l)
-        return ne.evaluate(
-            self._asu_test_np,
+        return ne.evaluate(nexpr,
             local_dict={'h':h.astype(int),'k':k.astype(int),'l':l.astype(int)},
             )
 
@@ -336,6 +332,7 @@ class Symmetry:
             laue_group_symbol=self.laue_group_symbol,
             laue_group_operators=self.laue_group_operators,
             reciprocal_space_asu=self.reciprocal_space_asu,
+            reflection_conditions=self.reflection_conditions, # added
         )
 
     @staticmethod
@@ -349,6 +346,7 @@ class Symmetry:
             laue_group_symbol=obj.laue_group_symbol.nxvalue,
             laue_group_operators=obj.laue_group_operators.nxvalue,
             reciprocal_space_asu=obj.reciprocal_space_asu.nxvalue,
+            reflection_conditions=obj.reflection_conditions.nxvalue, # added! incompatible with earlier versions
         )
 
     @staticmethod
@@ -363,6 +361,7 @@ class Symmetry:
             laue_group_symbol=E.laue_group_symbol,
             laue_group_operators=E.laue_group_operators,
             reciprocal_space_asu=E.reciprocal_space_asu,
+            reflection_conditions=E.reflection_conditions, # added!
         )
 
     def __str__(self):

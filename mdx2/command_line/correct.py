@@ -26,6 +26,7 @@ def parse_arguments():
     parser.add_argument("--attenuation", metavar='TF', default=True, help="apply attenuation correction?")
     parser.add_argument("--efficiency", metavar='TF', default=True, help="apply efficiency correction?")
     parser.add_argument("--polarization", metavar='TF', default=True, help="apply polarization correction?")
+    parser.add_argument("--p1",action='store_true',help="map Miller indices to asymmetric unit for P1 (Friedel symmetry only)")
     parser.add_argument("--outfile", default="corrected.nxs", help="name of the output NeXus file")
 
     return parser
@@ -43,7 +44,12 @@ def run(args=None):
 
     Corrections = loadobj(args.geom,'corrections')
     Crystal = loadobj(args.geom,'crystal')
-    Symmetry = loadobj(args.geom,'symmetry')
+
+    if args.p1:
+        print('ignoring space group information and using P1 symmetry only')
+        Symmetry = None
+    else:
+        Symmetry = loadobj(args.geom,'symmetry')
 
     UB = Crystal.ub_matrix
 

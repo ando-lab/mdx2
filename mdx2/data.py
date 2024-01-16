@@ -2,7 +2,7 @@ from copy import deepcopy
 
 import numpy as np
 import pandas as pd
-
+from joblib import Parallel, delayed
 from nexusformat.nexus import NXfield, NXdata, NXgroup, NXreflections
 
 from mdx2.dxtbx_machinery import Experiment
@@ -88,13 +88,18 @@ class HKLTable:
         cols = {k:self.__dict__[k] for k in self.__dict__ if k not in ['ndiv']}
         return pd.DataFrame(cols)
 
-    def to_asu(self,Symmetry):
+    def to_asu(self,Symmetry=None):
+        """Map to asymmetric unit. If Symmetry is ommitted, P1 space group is assumed (op = 0 for l>=0, op=1 for l<0)"""
         ndiv = self.ndiv
         H = np.round(self.h*ndiv[0]).astype(int)
         K = np.round(self.k*ndiv[1]).astype(int)
         L = np.round(self.l*ndiv[2]).astype(int)
 
-        H,K,L,op = Symmetry.to_asu(H,K,L)
+        if Symmetry is None:
+            op = (L<0).astype(int)
+            L = np.abs(L)
+        else:
+            H,K,L,op = Symmetry.to_asu(H,K,L)
 
         newtable = deepcopy(self)
         newtable.h = H/ndiv[0]
@@ -228,7 +233,8 @@ class ImageSeries:
     def data_masked(self):
         return np.ma.masked_equal(self._as_np(self.data),self._maskval,copy=False)
 
-    def bin_down(self,bins,valid_range=None,count_rate=True):
+    def bin_down(self,bins,valid_range=None,count_rate=True,nproc=1):
+
         bins = np.array(bins)
         nbins = np.ceil(self.shape/bins).astype(int)
         sl_0 = slice_sections(self.shape[0],nbins[0])
@@ -239,19 +245,30 @@ class ImageSeries:
         new_iy = np.array([self.iy[sl].mean() for sl in sl_1])
         new_ix = np.array([self.ix[sl].mean() for sl in sl_2])
 
-        nbins = [len(sl_0),len(sl_1),len(sl_2)]
-
-        new_data = np.empty(nbins,dtype=float)
-        for ind_phi,sl_phi in enumerate(sl_0):
-            print(f'binning frames {sl_phi.start} to {sl_phi.stop-1}')
-            tmp = self._as_np(self.data[sl_phi,:,:])
-            #print('binning')
+        def binslab(sl):
+            outslab = np.empty([len(sl_1),len(sl_2)],dtype=float)
+            tmp = self._as_np(self.data[sl,:,:])
             tmp = np.ma.masked_equal(tmp,self._maskval,copy=False)
             if valid_range is not None:
                 tmp = np.ma.masked_outside(tmp,valid_range[0],valid_range[1],copy=False)
             for ind_y,sl_y in enumerate(sl_1): # not vectorized - could be slow?
                 for ind_x,sl_x in enumerate(sl_2):
-                    new_data[ind_phi,ind_y,ind_x] = tmp[:,sl_y,sl_x].mean()
+                    val = tmp[:,sl_y,sl_x].mean()
+                    if isinstance(val,np.ma.masked_array):
+                        val = np.nan
+                    outslab[ind_y,ind_x] = val
+            return outslab
+
+        if nproc==1:
+            slabs = []
+            for ind,sl in enumerate(sl_0):
+                print(f'binning frames {sl.start} to {sl.stop-1}')
+                slabs.append(binslab(sl))
+            new_data = np.stack(slabs)
+        else:
+            with Parallel(n_jobs=nproc,verbose=10) as parallel:
+                new_data = np.stack(parallel(delayed(binslab)(sl) for sl in sl_0))
+
         if count_rate:
             new_times = np.array([self.exposure_times[sl].mean() for sl in sl_0])
             new_data = new_data/new_times[:,np.newaxis,np.newaxis]
@@ -317,16 +334,40 @@ class ImageSeries:
             signal = NXfield(self.data,name='data')
         return NXdata(signal=signal,axes=[phi,iy,ix],exposure_times=self.exposure_times)
 
-    def find_peaks_above_threshold(self,threshold,verbose=True):
+#    def find_peaks_above_threshold(self,threshold,verbose=True):
+#        """find pixels above a threshold"""
+#        peaklist = []
+#        for ind,ims in enumerate(self.iter_chunks()):
+#            im_data = ims.data_masked
+#            peaks = Peaks.where(im_data>threshold,ims.phi,ims.iy,ims.ix)
+#            if peaks.size:
+#                if verbose: print(f'found {peaks.size} peaks in chunk {ind}')
+#                peaklist.append(peaks)
+#        peaks = Peaks.stack(peaklist)
+#        if verbose: print(f'found {peaks.size} peaks in total')
+#        return peaks
+
+    def find_peaks_above_threshold(self,threshold,verbose=True,nproc=1):
         """find pixels above a threshold"""
-        peaklist = []
-        for ind,ims in enumerate(self.iter_chunks()):
+        def peaksearch(sl):
+            ims = self[sl]
             im_data = ims.data_masked
             peaks = Peaks.where(im_data>threshold,ims.phi,ims.iy,ims.ix)
             if peaks.size:
-                if verbose: print(f'found {peaks.size} peaks in chunk {ind}')
-                peaklist.append(peaks)
-        peaks = Peaks.stack(peaklist)
+                return peaks
+
+        if nproc==1:
+            peaklist = []
+            for ind,sl in enumerate(self.chunk_slice_iterator()):
+                peaks = peaksearch(sl)
+                if peaks is not None:
+                    if verbose: print(f'found {peaks.size} peaks in chunk {ind}')
+                    peaklist.append(peaks)
+            peaks = Peaks.stack(peaklist)
+        else:
+            with Parallel(n_jobs=nproc,verbose=10) as parallel:
+                peaklist = parallel(delayed(peaksearch)(sl) for sl in self.chunk_slice_iterator())
+            peaks = Peaks.stack([p for p in peaklist if p is not None])
         if verbose: print(f'found {peaks.size} peaks in total')
         return peaks
 

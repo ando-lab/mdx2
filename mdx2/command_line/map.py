@@ -24,7 +24,7 @@ def parse_arguments():
     parser.add_argument("geom", help="NeXus file with symmetry and crystal")
     parser.add_argument("hkl", help="NeXus file with hkl_table")
     parser.add_argument("--symmetry", default=True, metavar='TF', help = "apply symmetry operators?")
-    parser.add_argument('--limits', default=[0,10,0,10,0,10], type=int, nargs=6, metavar=('H1','H2','K1','K2','L1','L2'), help="region to map")
+    parser.add_argument('--limits', default=[0,10,0,10,0,10], type=float, nargs=6, metavar=('H1','H2','K1','K2','L1','L2'), help="region to map")
     parser.add_argument('--signal',default='intensity', help="column in hkl_table to map")
     parser.add_argument("--outfile", default="map.nxs", help="name of the output NeXus file")
 
