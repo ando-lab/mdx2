@@ -61,9 +61,9 @@ Data processing is orchestrated by chaining together *DIALS* and *mdx2* command-
 
 Statistical analysis of scattering and visualization tasks are performed Python using the *mdx2* package and standard tools such as *pandas* and *numpy*. The included Jupyter notebooks reproduce all pre-processing and plotting steps to generate the figures in Meisburger & Ando 2024.
 
-- Figure 2 -- ![dials_scale_factors.ipynb](dials_scale_factors.ipynb)
-- Figure 3 -- ![scaling_model.ipynb](scaling_model.ipynb)
-- Figure 4 -- ![map_statistics.ipynb](map_statistics.ipynb)
-- Figure 5 -- ![visualization.ipynb](visualization.ipynb)
-- Figure S1 -- ![scale_factor_mdx2_vs_dials.ipynb](scale_factor_mdx2_vs_dials.ipynb)
-- Figure S2 -- ![cchalf_vs_redundancy.ipynb](cchalf_vs_redundancy.ipynb)
+- Figure 2 -- [dials_scale_factors.ipynb](dials_scale_factors.ipynb)
+- Figure 3 -- [scaling_model.ipynb](scaling_model.ipynb)
+- Figure 4 -- [map_statistics.ipynb](map_statistics.ipynb)
+- Figure 5 -- [visualization.ipynb](visualization.ipynb)
+- Figure S1 -- [scale_factor_mdx2_vs_dials.ipynb](scale_factor_mdx2_vs_dials.ipynb)
+- Figure S2 -- [cchalf_vs_redundancy.ipynb](cchalf_vs_redundancy.ipynb)
