@@ -6,7 +6,7 @@
 
 > Meisburger, S.P., and Ando, N. Scaling and merging macromolecular diffuse scattering with *mdx2*. [In preparation] (2024).
 
-> Meisburger, S.P., and Ando, N. Chapter Two - Processing macromolecular diffuse scattering data. In *Methods in Enzymology* Volume 688, 43-86 (2023). ![BioRxiv](https://www.biorxiv.org/content/10.1101/2023.06.04.543637v1)
+> Meisburger, S.P., and Ando, N. Chapter Two - Processing macromolecular diffuse scattering data. In *Methods in Enzymology* Volume 688, 43-86 (2023). [BioRxiv](https://www.biorxiv.org/content/10.1101/2023.06.04.543637v1)
 
 > Meisburger, S.P., Case, D.A. & Ando, N. Diffuse X-ray scattering from correlated motions in a protein crystal. *Nature Communications* **11**, 1271 (2020). [doi:10.1038/s41467-020-14933-6](https://doi.org/10.1038/s41467-020-14933-6)
 
@@ -15,11 +15,11 @@
 
 ### Insulin tutorial
 
-A introductory walkthrough is included. See ![examples/insulin-tutorial/README.md](examples/insulin-tutorial/README.md) for instructions.
+A introductory walkthrough is included. See [examples/insulin-tutorial/README.md](examples/insulin-tutorial/README.md) for instructions.
 
 ### Multi-crystal scaling
 
-Scripts to process and analyze the multi-crystal insulin dataset from Meisburger & Ando 2024 are provided in ![examples/insulin-multi-crystal](examples/insulin-multi-crystal).
+Scripts to process and analyze the multi-crystal insulin dataset from Meisburger & Ando 2024 are provided in [examples/insulin-multi-crystal](examples/insulin-multi-crystal).
 
 ## Versions
 
@@ -53,11 +53,11 @@ Limitations:
 
 ### Using conda (for introductory tutorial)
 
-Install version 0.3.0 using conda: see ![examples/insulin-tutorial/README.md](examples/insulin-tutorial/README.md) for detailed instructions.
+Install version 0.3.0 using conda: see [examples/insulin-tutorial/README.md](examples/insulin-tutorial/README.md) for detailed instructions.
 
 ### Using micromamba (for latest version)
 
-Install ![micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html).
+Install [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html).
 
 ```bash
 curl https://raw.githubusercontent.com/ando-lab/mdx2/main/env.yaml env.yaml
