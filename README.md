@@ -15,7 +15,7 @@
 
 ### Insulin tutorial
 
-A introductory walkthrough is included. See [examples/insulin-tutorial/README.md](examples/insulin-tutorial/README.md) for instructions.
+A introductory walkthrough is included. See [examples/insulin-tutorial](examples/insulin-tutorial/README.md) for instructions.
 
 ### Multi-crystal scaling
 
@@ -53,7 +53,7 @@ Limitations:
 
 ### Using conda (for introductory tutorial)
 
-Install version 0.3.0 using conda: see [examples/insulin-tutorial/README.md](examples/insulin-tutorial/README.md) for detailed instructions.
+Install version 0.3.0 using conda: see [examples/insulin-tutorial](examples/insulin-tutorial/README.md) for detailed instructions.
 
 ### Using micromamba (for latest version)
 
