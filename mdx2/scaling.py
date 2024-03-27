@@ -586,7 +586,7 @@ class ScaledData:
         return len(self._batches)
 
     def _masked(self,arr):
-        return np.ma.MaskedArray(data=arr,mask=self.mask,copy=False)
+        return np.ma.MaskedArray(data=np.ma.getdata(arr),mask=self.mask,copy=False)
 
     @property
     def I(self):
