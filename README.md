@@ -6,7 +6,7 @@
 
 *Mdx2* is based on algorithms and general philosophy of the MATLAB library [mdx-lib](https://github.com/ando-lab/mdx-lib). The methods are described in the following publications:
 
-> Meisburger, S.P., and Ando, N. Scaling and merging macromolecular diffuse scattering with *mdx2*. [In preparation] (2024).
+> Meisburger, S.P., and Ando, N. Scaling and merging macromolecular diffuse scattering with *mdx2*. [In review] (2024). [BioRxiv](https://doi.org/10.1101/2024.01.16.575887)
 
 > Meisburger, S.P., and Ando, N. Chapter Two - Processing macromolecular diffuse scattering data. In *Methods in Enzymology* Volume 688, 43-86 (2023). [BioRxiv](https://www.biorxiv.org/content/10.1101/2023.06.04.543637v1)
 
