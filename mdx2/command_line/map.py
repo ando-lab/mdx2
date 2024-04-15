@@ -33,6 +33,13 @@ def parse_arguments():
 def run(args=None):
     parser = parse_arguments()
     args = parser.parse_args(args)
+    
+    # fix argparse ~bug where booleans are given as strings
+    for arg in ['symmetry']:
+        if getattr(args,arg) in ['True','true','T','t']:
+            setattr(args,arg,True)
+        else:
+            setattr(args,arg,False)
 
     T = loadobj(args.hkl,'hkl_table')
     Crystal = loadobj(args.geom,'crystal') # unused currently

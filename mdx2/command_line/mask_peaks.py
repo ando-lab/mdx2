@@ -25,6 +25,7 @@ def parse_arguments():
     parser.add_argument("--sigma_cutoff", metavar='SIGMA', default=3, type=float, help="\sigma value to draw the peak mask")
     parser.add_argument("--outfile", default="mask.nxs", help="name of the output NeXus file")
     parser.add_argument("--nproc", type=int, default=1, metavar='N', help="number of parallel processes")
+    parser.add_argument("--bragg", action='store_true', help='create a Bragg peak mask instead')
 
     return parser
 
@@ -65,16 +66,19 @@ def run(args=None):
         for msk,sl in zip(masklist,IS.chunk_slice_iterator()):
             mask[sl] = msk # <-- note, this copy step could be avoided with shared mem
 
+    if args.bragg:
+        print(f'inverting mask to retain Bragg peaks')
+        mask = np.logical_not(mask)
+    else:
+        print(f'masking count threshold peaks')
+        P.to_mask(IS.phi,IS.iy,IS.ix,mask_in=mask)
+    
     # add peaks
-    print(f'masking count threshold peaks')
-    P.to_mask(IS.phi,IS.iy,IS.ix,mask_in=mask)
-
     print(f"Saving mask to {args.outfile}")
 
     maskobj = GridData((IS.phi,IS.iy,IS.ix),mask)
-
     saveobj(maskobj,args.outfile,name='mask',append=False)
-
+    
     print('done!')
 
 if __name__ == "__main__":

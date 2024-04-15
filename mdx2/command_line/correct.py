@@ -26,6 +26,7 @@ def parse_arguments():
     parser.add_argument("--attenuation", metavar='TF', default=True, help="apply attenuation correction?")
     parser.add_argument("--efficiency", metavar='TF', default=True, help="apply efficiency correction?")
     parser.add_argument("--polarization", metavar='TF', default=True, help="apply polarization correction?")
+    parser.add_argument("--lorentz", metavar='TF', default=False, help="apply Lorentz correction?")
     parser.add_argument("--p1",action='store_true',help="map Miller indices to asymmetric unit for P1 (Friedel symmetry only)")
     parser.add_argument("--outfile", default="corrected.nxs", help="name of the output NeXus file")
 
@@ -34,6 +35,13 @@ def parse_arguments():
 def run(args=None):
     parser = parse_arguments()
     args = parser.parse_args(args)
+    
+    # fix argparse ~bug where booleans are given as strings
+    for arg in ['attenuation','efficiency','polarization','lorentz']:
+        if getattr(args,arg) in ['True','true','T','t']:
+            setattr(args,arg,True)
+        else:
+            setattr(args,arg,False)
 
     T = loadobj(args.hkl,'hkl_table')
 
@@ -88,6 +96,10 @@ def run(args=None):
     print(f'computing intensity and intensity_error')
     T.intensity = count_rate/solid_angle
     T.intensity_error = count_rate_error/solid_angle
+    
+    if args.lorentz:
+        T.intensity *= T.rs_volume
+        T.intensity_error *= T.rs_volume
 
     # remove some unnecessary columns
     del(T.counts)
