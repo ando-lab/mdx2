@@ -62,7 +62,7 @@ Install version 0.3.0 using conda: see [examples/insulin-tutorial](examples/insu
 Install [micromamba](https://mamba.readthedocs.io/en/latest/installation/micromamba-installation.html).
 
 ```bash
-curl https://raw.githubusercontent.com/ando-lab/mdx2/main/env.yaml env.yaml
+curl -O https://raw.githubusercontent.com/ando-lab/mdx2/main/env.yaml
 micromamba create -f env.yaml
 micromamba activate mdx2
 pip install git+https://github.com/ando-lab/mdx2.git
