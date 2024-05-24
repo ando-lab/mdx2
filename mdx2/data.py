@@ -146,9 +146,17 @@ class HKLTable:
         return hkl, index_map, counts
 
     def bin(self,column_names=None,count_name='count'):
-
+        
         if column_names is None:
             column_names = self._data_keys
+            
+        # catch the case where the HKLTable is empty, and return an empty table with count_name field
+        # (used by integrate)
+        if len(self) == 0:
+            outcols = {k:[] for k in column_names}
+            if count_name is not None:
+                outcols[count_name] = np.array([],dtype=np.int64) # np.unique returns counts as int64 dtype
+            return HKLTable([],[],[],ndiv=self.ndiv,**outcols)
 
         #print('finding unique indices')
         (h,k,l), index_map, counts = self.unique()
