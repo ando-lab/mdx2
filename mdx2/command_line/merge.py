@@ -103,7 +103,7 @@ def run(args=None):
             if not args.no_absorption and ('absorption_model' in a.entry.keys()):
                 refiner.absorption.model = loadobj(fn,'absorption_model')
             if not args.no_offset and ('offset_model' in a.entry.keys()):
-                refiner.no_offset.model = loadobj(fn,'offset_model')
+                refiner.offset.model = loadobj(fn,'offset_model')
             if not args.no_detector and ('detector_model' in a.entry.keys()):
                 refiner.detector.model = loadobj(fn,'detector_model')
             if not args.no_scaling and ('scaling_model' in a.entry.keys()):
