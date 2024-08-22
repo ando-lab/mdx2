@@ -91,7 +91,11 @@ class Experiment:
         symm = self._crystal.get_crystal_symmetry()
         sg = symm.space_group()
         ops = sg.all_ops()
-        sg_ops = np.stack([np.array(op.as_double_array()).reshape(3,4) for op in ops],axis=0)
+        def op2np(op):
+            r = np.array(op.r().as_double()).reshape(3,3)
+            t = np.array(op.t().as_double()).reshape(3,1)
+            return np.hstack((r,t))
+        sg_ops = np.stack([op2np(op) for op in ops],axis=0)
         return sg_ops
 
     @property
