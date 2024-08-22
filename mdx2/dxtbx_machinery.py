@@ -78,6 +78,12 @@ class Experiment:
         asu_str = re.sub(r'([hkl0\<\>\=]+)',r'(\1)',asu_str)
         asu_str = re.sub('and',r'&',asu_str)
         asu_str = re.sub('or',r'|',asu_str)
+        # apply a change-of-basis operation if needed
+        # see: https://github.com/cctbx/cctbx_project/blob/master/cctbx/sgtbx/reciprocal_space_asu.h
+        if not asu.is_reference():
+            op = asu.cb_op().as_hkl()
+            hklmap = {k:f'({v})' for k,v in zip(['h','k','l'],op.split(','))}
+            asu_str = re.sub('(h|k|l)',lambda x: hklmap[x.group()], asu_str)
         return asu_str
 
     @property
