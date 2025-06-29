@@ -210,11 +210,14 @@ class ImageSeries:
     """Image stack resulting from single sweep of data"""
 
     def __init__(self,phi,iy,ix,data,exposure_times,maskval=-1):
-        self.phi = phi
-        self.iy = iy
-        self.ix = ix
+        #self.phi = phi
+        #self.iy = iy
+        #self.ix = ix
+        self.phi = np.atleast_1d(phi)
+        self.iy = np.atleast_1d(iy)
+        self.ix = np.atleast_1d(ix)
+        self.exposure_times = np.atleast_1d(exposure_times)
         self.data = data # can be NXfield or numpy array, doesn't matter
-        self.exposure_times = exposure_times
         self._maskval = maskval
 
     @property
@@ -248,7 +251,7 @@ class ImageSeries:
         sl_0 = slice_sections(self.shape[0],nbins[0])
         sl_1 = slice_sections(self.shape[1],nbins[1])
         sl_2 = slice_sections(self.shape[2],nbins[2])
-
+        
         new_phi = np.array([self.phi[sl].mean() for sl in sl_0])
         new_iy = np.array([self.iy[sl].mean() for sl in sl_1])
         new_ix = np.array([self.ix[sl].mean() for sl in sl_2])

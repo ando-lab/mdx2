@@ -11,6 +11,8 @@ try:
 except ImportError:
     pass # fail silently... xarray features still in development
 
+RTOL=1e-6 # relative tolerance for minres
+
 class InterpLin3:
     def __init__(self,x,y,z,wx,wy,wz):
         self.x = x # points to interpolate at in the x direction
@@ -748,10 +750,20 @@ class ScalingModelRefiner(_ModelRefiner):
         AA, BB, Ay, yy = self.calc_problem(Imerge,a=a,c=c,d=d)
         alpha = alpha_mult*AA.trace()/BB.trace()
         G = AA + alpha*BB
-        if sparse.issparse(G):
-            ufit = sparse.linalg.lsqr(G,Ay)[0]
+        
+        #if sparse.issparse(G):
+        #    ufit = sparse.linalg.lsqr(G,Ay)[0]
+        #else:
+        #    ufit = np.linalg.lstsq(G,Ay,rcond=None)[0]
+
+        # BEGIN NEW
+        if self.model.u is not None:
+            x0 = self.model.u.flatten()
         else:
-            ufit = np.linalg.lstsq(G,Ay,rcond=None)[0]
+            x0 = np.ones(G.shape[0])
+        ufit = sparse.linalg.minres(G,Ay,x0=x0,rtol=RTOL)[0] # switch to minres with initial state
+        # END NEW
+        
         x2 = ufit @ AA @ ufit - 2*ufit @ Ay + yy
         x2 = x2/self.data.ih.count()
         return ufit, x2
@@ -802,10 +814,19 @@ class AbsorptionModelRefiner(_ModelRefiner):
         alpha_xy = alpha_xy_mult*AA.trace()/BBxy.trace()
         alpha_z = alpha_z_mult*AA.trace()/BBz.trace()
         G = AA + alpha_xy*BBxy + alpha_z*BBz
-        if sparse.issparse(G):
-            ufit = sparse.linalg.lsqr(G,Ay)[0]
+        # if sparse.issparse(G):
+        #     ufit = sparse.linalg.lsqr(G,Ay)[0]
+        # else:
+        #     ufit = np.linalg.lstsq(G,Ay,rcond=None)[0]
+
+        # BEGIN NEW
+        if self.model.u is not None:
+            x0 = self.model.u.flatten()
         else:
-            ufit = np.linalg.lstsq(G,Ay,rcond=None)[0]
+            x0 = np.ones(G.shape[0])
+        ufit = sparse.linalg.minres(G,Ay,x0=x0,rtol=RTOL)[0] # switch to minres with initial state
+        # END NEW
+        
         x2 = ufit @ AA @ ufit - 2*ufit @ Ay + yy
         x2 = x2/self.data.ih.count()
         self.model.set_u(ufit)
@@ -858,10 +879,19 @@ class OffsetModelRefiner(_ModelRefiner):
         #alpha_c = alpha_c_mult*AA.trace()/H.trace()
         alpha_c = alpha_c_mult*np.max(AA.diagonal())/np.max(H.diagonal())
         G = AA + alpha_x*BBx + alpha_y*BBy + alpha_c*H
-        if sparse.issparse(G):
-            ufit = sparse.linalg.lsqr(G,Ay)[0]
+        # if sparse.issparse(G):
+        #     ufit = sparse.linalg.lsqr(G,Ay)[0]
+        # else:
+        #     ufit = np.linalg.lstsq(G,Ay,rcond=None)[0]
+
+        # BEGIN NEW
+        if self.model.u is not None:
+            x0 = self.model.u.flatten()
         else:
-            ufit = np.linalg.lstsq(G,Ay,rcond=None)[0]
+            x0 = np.zeros(G.shape[0])
+        ufit = sparse.linalg.minres(G,Ay,x0=x0,rtol=RTOL)[0] # switch to minres with initial state
+        # END NEW
+        
         x2 = ufit @ AA @ ufit - 2*ufit @ Ay + yy
         x2 = x2/self.data.ih.count()
         if min_c is not None:
@@ -912,10 +942,19 @@ class DetectorModelRefiner(_ModelRefiner):
         AA, BB, Ay, yy = self.calc_problem(Imerge,a=a,b=b,c=c)
         alpha = alpha_mult*AA.trace()/BB.trace()
         G = AA + alpha*BB
-        if sparse.issparse(G):
-            ufit = sparse.linalg.lsqr(G,Ay)[0]
+        # if sparse.issparse(G):
+        #     ufit = sparse.linalg.lsqr(G,Ay)[0]
+        # else:
+        #     ufit = np.linalg.lstsq(G,rcond=None)[0]
+
+        # BEGIN NEW
+        if self.model.u is not None:
+            x0 = self.model.u.flatten()
         else:
-            ufit = np.linalg.lstsq(G,rcond=None)[0]
+            x0 = np.ones(G.shape[0])
+        ufit = sparse.linalg.minres(G,Ay,x0=x0,rtol=RTOL)[0] # switch to minres with initial state
+        # END NEW
+        
         x2 = ufit @ AA @ ufit - 2*ufit @ Ay + yy
         x2 = x2/self.data.ih.count()
         return ufit, x2

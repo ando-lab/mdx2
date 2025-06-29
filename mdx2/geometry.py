@@ -59,7 +59,8 @@ class GaussianPeak:
 class GridData:
 
     def __init__(self,axes,data,axes_names=None):
-        self.axes = axes # tuple of length 3 with axes of length l,m,n
+        #self.axes = axes # tuple of length 3 with axes of length l,m,n
+        self.axes = [np.atleast_1d(ax) for ax in axes] # tuple of length 3 with axes of length l,m,n
         self.data = data # stack of arrays of equal size: l by m by n by K
         if axes_names is None:
             axes_names = [f'axis{j}' for j in range(len(axes))]
