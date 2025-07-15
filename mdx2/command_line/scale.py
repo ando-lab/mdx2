@@ -141,7 +141,8 @@ def run(args=None):
     hkl = HKLTable.concatenate(tabs)
 
     print('Grouping redundant observations')
-    (h,k,l), index_map, counts = hkl.unique()
+    (h,k,l), index_map, count
+    s = hkl.unique()
     
     S = ScaledData(
         hkl.intensity,
