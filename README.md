@@ -25,6 +25,10 @@ Scripts to process and analyze the multi-crystal insulin dataset from Meisburger
 
 ## Versions
 
+### Version 1.0.1
+
+- MIT license
+
 ### Version 1.0.0
 
 New:
