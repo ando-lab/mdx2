@@ -311,7 +311,7 @@ class Symmetry:
 
         for n in reversed(range(ops.shape[0])):
             op = ops[n,:]
-            hkl_n = np.tensordot(op,hkl_in,axes=1)
+            hkl_n = np.tensordot(op.T,hkl_in,axes=1)
             is_asu = self.is_asu(hkl_n[0,...],hkl_n[1,...],hkl_n[2,...])
             opindex[is_asu] = n
             hkl_out[:,is_asu] = hkl_n[:,is_asu]
