@@ -40,6 +40,10 @@ def parse_arguments():
                        )
     parser.add_argument('--geometry',
                         help="NeXus file containing the Laue group symmetry operators, required if --split is 'Friedel'")
+    parser.add_argument('--no-scaling',action='store_true',help='do not apply scaling model')
+    parser.add_argument('--no-offset',action='store_true',help='do not apply offset model')
+    parser.add_argument('--no-absorption',action='store_true',help='do not apply absorption model')
+    parser.add_argument('--no-detector',action='store_true',help='do not apply detector model')
 
     return parser
 
@@ -96,13 +100,13 @@ def run(args=None):
     if args.scale is not None:
         for fn, refiner in zip(args.scale, MR._batch_refiners):
             a = nxload(fn)
-            if 'absorption_model' in a.entry.keys():
+            if not args.no_absorption and ('absorption_model' in a.entry.keys()):
                 refiner.absorption.model = loadobj(fn,'absorption_model')
-            if 'offset_model' in a.entry.keys():
+            if not args.no_offset and ('offset_model' in a.entry.keys()):
                 refiner.offset.model = loadobj(fn,'offset_model')
-            if 'detector_model' in a.entry.keys():
+            if not args.no_detector and ('detector_model' in a.entry.keys()):
                 refiner.detector.model = loadobj(fn,'detector_model')
-            if 'scaling_model' in a.entry.keys():
+            if not args.no_scaling and ('scaling_model' in a.entry.keys()):
                 refiner.scaling.model = loadobj(fn,'scaling_model')
     
     print(f"applying scale factors")

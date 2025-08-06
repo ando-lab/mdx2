@@ -78,6 +78,12 @@ class Experiment:
         asu_str = re.sub(r'([hkl0\<\>\=]+)',r'(\1)',asu_str)
         asu_str = re.sub('and',r'&',asu_str)
         asu_str = re.sub('or',r'|',asu_str)
+        # apply a change-of-basis operation if needed
+        # see: https://github.com/cctbx/cctbx_project/blob/master/cctbx/sgtbx/reciprocal_space_asu.h
+        if not asu.is_reference():
+            op = asu.cb_op().as_hkl()
+            hklmap = {k:f'({v})' for k,v in zip(['h','k','l'],op.split(','))}
+            asu_str = re.sub('(h|k|l)',lambda x: hklmap[x.group()], asu_str)
         return asu_str
 
     @property
@@ -85,7 +91,11 @@ class Experiment:
         symm = self._crystal.get_crystal_symmetry()
         sg = symm.space_group()
         ops = sg.all_ops()
-        sg_ops = np.stack([np.array(op.as_double_array()).reshape(3,4) for op in ops],axis=0)
+        def op2np(op):
+            r = np.array(op.r().as_double()).reshape(3,3)
+            t = np.array(op.t().as_double()).reshape(3,1)
+            return np.hstack((r,t))
+        sg_ops = np.stack([op2np(op) for op in ops],axis=0)
         return sg_ops
 
     @property

@@ -146,9 +146,17 @@ class HKLTable:
         return hkl, index_map, counts
 
     def bin(self,column_names=None,count_name='count'):
-
+        
         if column_names is None:
             column_names = self._data_keys
+            
+        # catch the case where the HKLTable is empty, and return an empty table with count_name field
+        # (used by integrate)
+        if len(self) == 0:
+            outcols = {k:[] for k in column_names}
+            if count_name is not None:
+                outcols[count_name] = np.array([],dtype=np.int64) # np.unique returns counts as int64 dtype
+            return HKLTable([],[],[],ndiv=self.ndiv,**outcols)
 
         #print('finding unique indices')
         (h,k,l), index_map, counts = self.unique()
@@ -233,7 +241,7 @@ class ImageSeries:
     def data_masked(self):
         return np.ma.masked_equal(self._as_np(self.data),self._maskval,copy=False)
 
-    def bin_down(self,bins,valid_range=None,count_rate=True,nproc=1):
+    def bin_down(self,bins,valid_range=None,count_rate=True,nproc=1,mask=None):
 
         bins = np.array(bins)
         nbins = np.ceil(self.shape/bins).astype(int)
@@ -251,6 +259,9 @@ class ImageSeries:
             tmp = np.ma.masked_equal(tmp,self._maskval,copy=False)
             if valid_range is not None:
                 tmp = np.ma.masked_outside(tmp,valid_range[0],valid_range[1],copy=False)
+            if mask is not None:
+                msk = self._as_np(mask[sl,:,:])
+                tmp = np.ma.masked_where(msk,tmp,copy=False)
             for ind_y,sl_y in enumerate(sl_1): # not vectorized - could be slow?
                 for ind_x,sl_x in enumerate(sl_2):
                     val = tmp[:,sl_y,sl_x].mean()
