@@ -6,11 +6,11 @@
 
 *Mdx2* is based on algorithms and general philosophy of the MATLAB library [mdx-lib](https://github.com/ando-lab/mdx-lib). The methods are described in the following publications:
 
-> Meisburger, S.P., and Ando, N. Scaling and merging macromolecular diffuse scattering with *mdx2*. [In review] (2024). [BioRxiv](https://doi.org/10.1101/2024.01.16.575887)
+> Meisburger SP & Ando N. Scaling and merging macromolecular diffuse scattering with *mdx2*. Acta Cryst. D**80**, 299-313. [DOI](https://doi.org/10.1107/S2059798324002705)
+  s
+> Meisburger SP & Ando N. Chapter Two - Processing macromolecular diffuse scattering data. In *Methods in Enzymology* Volume **688**, 43-86. [DOI](https://doi.org/10.1016/bs.mie.2023.06.010), [BioRxiv](https://www.biorxiv.org/content/10.1101/2023.06.04.543637v1)
 
-> Meisburger, S.P., and Ando, N. Chapter Two - Processing macromolecular diffuse scattering data. In *Methods in Enzymology* Volume 688, 43-86 (2023). [BioRxiv](https://www.biorxiv.org/content/10.1101/2023.06.04.543637v1)
-
-> Meisburger, S.P., Case, D.A. & Ando, N. Diffuse X-ray scattering from correlated motions in a protein crystal. *Nature Communications* **11**, 1271 (2020). [doi:10.1038/s41467-020-14933-6](https://doi.org/10.1038/s41467-020-14933-6)
+> Meisburger SP, Case DA & Ando N. Diffuse X-ray scattering from correlated motions in a protein crystal. *Nature Communications* **11**, 1271 (2020). [DOI](https://doi.org/10.1038/s41467-020-14933-6)
 
 
 ## Examples
@@ -24,6 +24,14 @@ A introductory walkthrough is included. See [examples/insulin-tutorial](examples
 Scripts to process and analyze the multi-crystal insulin dataset from Meisburger & Ando 2024 are provided in [examples/insulin-multi-crystal](examples/insulin-multi-crystal).
 
 ## Versions
+
+### Version 1.0.2
+
+- Rudimentary Bragg peak integration, in development
+- Support for non-reference space group settings
+- Bug fixes, including:
+    - Symmetry operators now rotate in the correct direction
+    - Gracefully skip missing or masked data chunks
 
 ### Version 1.0.1
 
