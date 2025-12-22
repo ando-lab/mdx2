@@ -57,16 +57,6 @@ You'll probably want these packages too:
 micromamba install -c conda-forge dials nexpy jupyterlab xia2
 ```
 
-### Developer install (conda environment)
+### Developer install
 
-This will install the `dev` from `diff-use/mdx2` (The Diffuse Project's fork) in a conda environment called `mdx2-dev`
-
-```bash
-git clone -b dev https://github.com/diff-use/mdx2.git
-cd mdx2
-micromamba create -f env.yaml -n mdx2-dev
-micromamba activate mdx2-dev
-pip install -e ".[dev]"
-```
-
-The last line installs mdx2 in editable mode, with optional development tools including pytest and ruff
+See The Diffuse Project's [fork](https://github.com/diff-use/mdx2) for instructions.
