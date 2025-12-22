@@ -4,6 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdx2"
+description = "Macromolecular diffuse scattering data reduction"
 dynamic = ["version"]
 readme = "README.md"
 license = "MIT"
