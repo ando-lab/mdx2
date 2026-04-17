@@ -4,13 +4,19 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "mdx2"
+description = "Macromolecular diffuse scattering data reduction"
 dynamic = ["version"]
 readme = "README.md"
-license = { text = "MIT" }
+license = "MIT"
+license-files = ["LICEN[CS]E*"]
 authors = [
     { email = "spm82@cornell.edu", name = "Steve Meisburger" },
 ]
 requires-python = ">= 3.10"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
 dependencies = [
     "numpy",
     "pandas",
@@ -30,7 +36,8 @@ test = ["pytest>=6.0"]
 dev = ["ruff>=0.1.0", "pytest>=6.0"]
 
 [project.urls]
-repository = "https://github.com/diff-use/mdx2"
+Homepage = "https://github.com/ando-lab/mdx2"
+Issues = "https://github.com/ando-lab/mdx2/issues"
 
 [project.scripts]
 "mdx2.version" = "mdx2.command_line.version:run"
