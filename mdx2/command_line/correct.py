@@ -25,6 +25,7 @@ class Parameters:
     polarization: bool = True  # apply polarization correction
     lorentz: bool = False  # apply Lorentz correction
     p1: bool = False  # map Miller indices to asymmetric unit for P1 (Friedel symmetry only)
+    nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
     outfile: str = "corrected.nxs"  # name of the output NeXus file
 
 
@@ -39,6 +40,9 @@ def run_correct(params):
     efficiency = params.efficiency
     polarization = params.polarization
     lorentz = params.lorentz
+
+    if params.nproc != 1:
+        logger.warning("Serial execution only, ignoring nproc value")
 
     logger.info("Loading integrated data and geometry...")
     T = loadobj(hkl, "hkl_table")

@@ -21,6 +21,10 @@ Publications describing [ando-lab/mdx2](https://github.com/ando-lab/mdx2):
 
 ## Versions
 
+### Version 1.0.4
+
+- Added `mdx2.report` to automatically generate and execute ipython notebook reports from the command-line. Available templates: `visualization`, `scaling_model`, and `map_statistics`. For example outputs, see: [examples/insulin-multi-crystal/reports](examples/insulin-multi-crystal/reports) and [examples/insulin-tutorial/reports](examples/insulin-tutorial/reports).
+
 ### Version 1.0.3
 
 - Performance boost for `mdx2.import_data` using parallel read and write. The `data.nxs` file contains a virtual dataset linking to neXus files in a subdirectory (`datastore/` by default).

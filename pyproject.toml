@@ -12,7 +12,7 @@ license-files = ["LICEN[CS]E*"]
 authors = [
     { email = "spm82@cornell.edu", name = "Steve Meisburger" },
 ]
-requires-python = ">= 3.9"
+requires-python = ">= 3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
@@ -27,6 +27,7 @@ dependencies = [
     "numexpr",
     "simple-parsing",
     "loguru",
+    "papermill",
 ]
 # dxtbx needs to be installed with conda
 
@@ -52,12 +53,19 @@ Issues = "https://github.com/ando-lab/mdx2/issues"
 "mdx2.map" = "mdx2.command_line.map:run"
 "mdx2.scale" = "mdx2.command_line.scale:run"
 "mdx2.reintegrate" = "mdx2.command_line.reintegrate:run"
+"mdx2.report" = "mdx2.command_line.report:run"
 
 [tool.setuptools.dynamic]
 version = {file = "mdx2/VERSION"}
 
 [tool.setuptools.packages.find]
 include = ["mdx2", "mdx2.*"]
+
+[tool.setuptools.package-data]
+mdx2 = ["report/templates/*.ipynb"]
+
+[tool.setuptools.exclude-package-data]
+mdx2 = ["**/_*.ipynb"]
 
 [tool.ruff]
 line-length = 120

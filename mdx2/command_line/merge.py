@@ -33,6 +33,8 @@ class Parameters:
     offset: bool = field(default=True, negative_prefix="--no-")  # apply offset model if present
     absorption: bool = field(default=True, negative_prefix="--no-")  # apply absorption model if present
     detector: bool = field(default=True, negative_prefix="--no-")  # apply detector model if present
+    nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
+
 
     def __post_init__(self):
         """Validate inter-parameter dependencies and outlier parameter"""
@@ -84,6 +86,9 @@ def run_merge(params):
     apply_detector = params.detector
     geometry = params.geometry
 
+    if params.nproc != 1:
+        logger.warning("Serial execution only, ignoring nproc value")
+ 
     # load data into a giant table
     logger.info("Loading {} HKL table(s)...", len(hkl))
     tabs = []

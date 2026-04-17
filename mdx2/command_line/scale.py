@@ -97,6 +97,7 @@ class Parameters:
     offset: OffsetModelParameters = field(default_factory=OffsetModelParameters)
     outfile: Optional[List[str]] = field(default=None, nargs="*")
     """name of the output NeXus file(s). If omitted, will attempt a sensible name such as scales.nxs"""
+    nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
     mca2020: bool = False
     """shortcut for --scaling.enable True --offset.enable True --detector.enable True --absorption.enable True"""
 
@@ -318,6 +319,9 @@ def run_scale(params):
     S = load_data_for_scaling(*params.hkl)
 
     MR = BatchModelRefiner(S)
+
+    if params.nproc != 1:
+        logger.warning("Serial execution only, ignoring nproc value")
 
     if params.scaling.enable:
         MR.add_scaling_models(
