@@ -50,9 +50,9 @@ For a conda-based installation, you'll need [micromamba](https://mamba.readthedo
 ### User install (conda environment)
 
 ```bash
-micromamba create -f https://raw.githubusercontent.com/ando-lab/mdx2/refs/tags/v1.0.3/env.yaml
+micromamba create -f https://raw.githubusercontent.com/ando-lab/mdx2/refs/tags/v1.0.4/env.yaml
 micromamba activate mdx2
-pip install mdx2==1.0.3
+pip install mdx2==1.0.4
 ```
 
 You'll probably want these packages too:
