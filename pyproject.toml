@@ -28,6 +28,7 @@ dependencies = [
     "simple-parsing",
     "loguru",
     "papermill",
+    "gemmi",
 ]
 # dxtbx needs to be installed with conda
 
@@ -54,6 +55,7 @@ Issues = "https://github.com/ando-lab/mdx2/issues"
 "mdx2.scale" = "mdx2.command_line.scale:run"
 "mdx2.reintegrate" = "mdx2.command_line.reintegrate:run"
 "mdx2.report" = "mdx2.command_line.report:run"
+"mdx2.export" = "mdx2.command_line.export:run"
 
 [tool.setuptools.dynamic]
 version = {file = "mdx2/VERSION"}
