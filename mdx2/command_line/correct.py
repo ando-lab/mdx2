@@ -27,6 +27,7 @@ class Parameters:
     p1: bool = False  # map Miller indices to asymmetric unit for P1 (Friedel symmetry only)
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
     outfile: str = "corrected.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.correct.log"  # name of the log file
 
 
 def run_correct(params):

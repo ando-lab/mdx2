@@ -26,6 +26,7 @@ class Parameters:
     """limits for the hkl grid (hmin, hmax, kmin, kmax, lmin, lmax)"""
     signal: str = "intensity"  # column in hkl_table to map
     outfile: str = "map.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.map.log"  # name of the log file
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
 
     def __post_init__(self):

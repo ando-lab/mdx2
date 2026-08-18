@@ -25,6 +25,7 @@ class Parameters:
     mask: Optional[str] = None  # name of NeXus file containing the mask
     valid_range: Optional[Tuple[int, int]] = None  # minimum and maximum valid data values
     outfile: str = "binned.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.bin_image_series.log"  # name of the log file
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
 
     def __post_init__(self):

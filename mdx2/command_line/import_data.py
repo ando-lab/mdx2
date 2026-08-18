@@ -24,6 +24,7 @@ class Parameters:
         default=None, help="chunking for compression (frames, y, x). Use -1 for default"
     )
     outfile: str = "data.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.import_data.log"  # name of the log file
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
     datastore: str = "datastore"  # folder for storing source datasets
 

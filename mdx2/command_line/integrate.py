@@ -30,6 +30,7 @@ class Parameters:
     max_spread: float = 1.0  # maximum angular spread (degrees) for binning partial observations
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
     outfile: str = "integrated.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.integrate.log"  # name of the log file
 
     def __post_init__(self):
         """Validate subdivide and max_spread parameters"""
