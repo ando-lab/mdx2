@@ -1,5 +1,6 @@
 import sys
 import types
+from pathlib import Path
 
 import nexusformat.nexus as nxs
 import numpy as np
@@ -53,6 +54,36 @@ def test_ImageSeries_virtual_dataset_creation(tmp_path):
     source_series = ImageSeries.load(nxobj.data._vfiles[1], mode="r+")
     source_series.data[0, 0, 0] = 666
     assert image_series.data[8, 0, 0] == 666
+
+
+def test_ImageSeries_virtual_dataset_creation_nested_paths(tmp_path):
+    """check source_directory is not duplicated when outfile has its own subdirectories (regression test)"""
+    data_opts = {"dtype": np.int32, "compression": "gzip", "compression_opts": 1, "shuffle": True}
+
+    phi = np.arange(20)
+    iy = np.arange(10)
+    ix = np.arange(10)
+    data = nxs.NXfield(shape=(20, 10, 10), name="data", **data_opts, chunks=(8, 5, 5))
+    exposure_times = 0.1 * np.ones_like(phi)
+
+    # outfile and datastore share a common parent subdirectory, e.g. "results/exp1"
+    outdir = tmp_path / "results" / "exp1"
+    filename = outdir / "data.nxs"
+    source_directory = outdir / "datastore"
+
+    image_series = ImageSeries(phi, iy, ix, data, exposure_times)
+    nxobj = image_series.save(filename, virtual=True, source_directory=str(source_directory))
+
+    assert len(nxobj.data._vfiles) == 3
+    for vfile in nxobj.data._vfiles:
+        # source files should live directly under source_directory, not in a duplicated nested subdirectory
+        assert Path(vfile).parent == source_directory
+        assert Path(vfile).is_file()
+
+    # reloading from disk should also resolve the virtual sources correctly
+    reloaded = ImageSeries.load(filename)
+    assert reloaded.virtual_source_files == nxobj.data._vfiles
+    assert reloaded.data.shape == (20, 10, 10)
 
 
 def test_loadobj_security_checks(tmp_path):

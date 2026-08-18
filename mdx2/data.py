@@ -689,12 +689,13 @@ class ImageSeries:
         if virtual:
             slices = [sl for sl in self.chunk_slice_along_axis(0)]
             prefix, ext = os.path.splitext(filename)
+            if source_directory is not None:
+                # use only the basename here, else outfile's directory gets duplicated under source_directory
+                prefix = os.path.join(source_directory, os.path.basename(prefix))
+                os.makedirs(source_directory, exist_ok=True)
             files = [
                 source_template.format(prefix=prefix, name=name, index=index, ext=ext) for index in range(len(slices))
             ]
-            if source_directory is not None:
-                files = [os.path.join(source_directory, f) for f in files]
-                os.makedirs(source_directory, exist_ok=True)
             data_path = f"/entry/{name}/data"
             layout = h5py.VirtualLayout(shape=self.data.shape, dtype=self.data.dtype)
 
