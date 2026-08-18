@@ -112,7 +112,7 @@ def with_logging(log_level="INFO"):
             logfile = params.logfile
 
             # File format: detailed with full timestamp, NO color tags for plain text
-            file_format = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}"
+            file_format = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {message}"
 
             # Stderr format: streamlined with fixed-width time and level, WITH colors
             stderr_format = "<green>{time:HH:mm:ss}</green> <level>{level: <7}</level> | {message}"
