@@ -236,6 +236,7 @@ class Parameters:
 
     # optional path to save the executed notebook to. If None, the template name us used with .ipynb extension
     output_path: Optional[str] = field(alias=["-o"], default=None)
+    logfile: str = "mdx2.report.log"  # name of the log file
 
     def __post_init__(self):
         # if the user provided input files at the top level, pass these to the template

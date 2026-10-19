@@ -40,6 +40,7 @@ class Parameters:
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
     output: Literal["counts", "intensity"] = "counts"  # counts or intensity
     outfile: str = "reintegrated.nxs"  # name of the output data
+    logfile: str = "mdx2.reintegrate.log"  # name of the log file
 
     def __post_init__(self):
         """Validate subdivide parameter"""

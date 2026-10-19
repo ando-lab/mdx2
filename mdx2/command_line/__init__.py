@@ -94,12 +94,11 @@ def with_parsing(parse_arguments):
     return decorator
 
 
-def with_logging(log_filename=None, log_level="INFO"):
+def with_logging(log_level="INFO"):
     """
     Decorator to set up logging for command-line tools.
 
     Args:
-        log_filename: Name of log file. If None, uses module name.
         log_level: Logging level (default: INFO)
     """
 
@@ -110,14 +109,10 @@ def with_logging(log_filename=None, log_level="INFO"):
             logger.remove()
 
             module_name = func.__module__.split(".")[-1]
-            # Determine log filename and module name
-            if log_filename is None:
-                logfile = f"mdx2.{module_name}.log"
-            else:
-                logfile = log_filename
+            logfile = params.logfile
 
             # File format: detailed with full timestamp, NO color tags for plain text
-            file_format = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {name}:{function}:{line} - {message}"
+            file_format = "{time:YYYY-MM-DD HH:mm:ss.SSS} | {level: <8} | {message}"
 
             # Stderr format: streamlined with fixed-width time and level, WITH colors
             stderr_format = "<green>{time:HH:mm:ss}</green> <level>{level: <7}</level> | {message}"

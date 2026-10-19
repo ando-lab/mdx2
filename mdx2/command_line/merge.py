@@ -29,12 +29,12 @@ class Parameters:
         None  # NeXus file containing the Laue group symmetry operators, required for --split Friedel
     )
     outfile: str = "merged.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.merge.log"  # name of the log file
     scaling: bool = field(default=True, negative_prefix="--no-")  # apply scaling model if present
     offset: bool = field(default=True, negative_prefix="--no-")  # apply offset model if present
     absorption: bool = field(default=True, negative_prefix="--no-")  # apply absorption model if present
     detector: bool = field(default=True, negative_prefix="--no-")  # apply detector model if present
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
-
 
     def __post_init__(self):
         """Validate inter-parameter dependencies and outlier parameter"""
@@ -88,7 +88,7 @@ def run_merge(params):
 
     if params.nproc != 1:
         logger.warning("Serial execution only, ignoring nproc value")
- 
+
     # load data into a giant table
     logger.info("Loading {} HKL table(s)...", len(hkl))
     tabs = []

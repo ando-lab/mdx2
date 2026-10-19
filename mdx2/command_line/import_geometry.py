@@ -20,8 +20,8 @@ class Parameters:
     expt: str = field(positional=True)  # dials experiments file, such as refined.expt
     sample_spacing: Tuple[int, int, int] = (1, 10, 10)  # interval in degrees or pixels (phi, iy, ix)
     outfile: str = "geometry.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.import_geometry.log"  # name of the log file
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
-
 
     def __post_init__(self):
         """Validate sample_spacing parameter"""

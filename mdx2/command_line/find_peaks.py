@@ -24,6 +24,7 @@ class Parameters:
     count_threshold: float  # pixels with counts above threshold are flagged as peaks
     sigma_cutoff: float = 3.0  # for outlier rejection in Gaussian peak fitting
     outfile: str = "peaks.nxs"  # name of the output NeXus file
+    logfile: str = "mdx2.find_peaks.log"  # name of the log file
     nproc: int = 1  # number of parallel processes (or 1 for sequential, -1 for all CPUs, -N for all but N+1)
 
     def __post_init__(self):
